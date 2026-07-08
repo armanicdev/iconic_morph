@@ -3,10 +3,9 @@ description: >-
   Path-level icon animation for Flutter — morph one SVG icon into another, plus
   3D constant-stroke spins, draw-on, trace, and idle loops, all drawn from your
   own SVGs. No Rive, no Lottie, no new assets, and ZERO external dependencies.
-version: 1.0.0
+version: 1.0.1
 
-# Authored by Armanic Studio (https://armanic.studio).
-homepage: https://armanic.studio
+# Authored by Armanic Studio (https://pub.dev/publishers/armanic.studio).
 repository: https://github.com/armanicdev/iconic_morph
 issue_tracker: https://github.com/armanicdev/iconic_morph/issues
 topics:

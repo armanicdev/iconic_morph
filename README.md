@@ -13,7 +13,7 @@ SVGs.
 - 🎯 **Bring your own icons.** An asset path, a raw SVG string, or a baked
   manifest. Three demo glyphs are bundled so it runs out of the box.
 
-> By [Armanic Studio](https://armanic.studio).
+> By [Armanic Studio](https://pub.dev/publishers/armanic.studio).
 
 ## Install
 

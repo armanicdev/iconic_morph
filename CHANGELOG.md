@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.1
+
+- Packaging & docs only — no API or behaviour changes. Use the canonical MIT
+  license text so GitHub and pub.dev detect the license cleanly, and point the
+  author link at the pub.dev publisher page.
+
 ## 1.0.0
 
 Initial public release on pub.dev.
