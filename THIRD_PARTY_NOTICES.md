@@ -1,3 +1,11 @@
+# Third-party notices
+
+`iconic_morph` vendors a modified SVG path-data reader
+(`lib/src/svg/svg_path.dart`) derived from the `path_parsing` package by
+Dan Field, used under the MIT license reproduced below.
+
+---
+
 Copyright (c) 2018 Dan Field
 
 Permission is hereby granted, free of charge, to any person obtaining a copy

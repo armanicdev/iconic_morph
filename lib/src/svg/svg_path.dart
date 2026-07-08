@@ -5,7 +5,7 @@
 // is the in-package [Matrix4] for the arc→cubic step.
 //
 // Lineage: the path grammar and the arc-normalization math derive from Dan
-// Field's `path_parsing` (MIT, © 2018 — full text in LICENSE_path_parsing),
+// Field's `path_parsing` (MIT, © 2018 — full text in THIRD_PARTY_NOTICES.md),
 // itself a port of Chromium/blink's SVG path parser. The numeric behavior is
 // kept byte-for-byte, so geometry stays identical to flutter_svg's; everything
 // else is reshaped for this engine — our names, our two-call surface, none of

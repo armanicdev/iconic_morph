@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.2
+
+- Packaging & docs only — no API or behaviour changes. Rename the vendored
+  `path_parsing` MIT notice from `LICENSE_path_parsing` to
+  `THIRD_PARTY_NOTICES.md` so hosts report a single project license (MIT)
+  instead of two. Dan Field's notice is retained in full as MIT requires.
+
 ## 1.0.1
 
 - Packaging & docs only — no API or behaviour changes. Use the canonical MIT

@@ -108,4 +108,4 @@ primitives, or `<style>` blocks. Stroke-vs-fill is detected from the `stroke` /
 ## License
 
 [MIT](LICENSE) © Armanic Studio. The SVG path reader (`lib/src/svg/svg_path.dart`)
-derives from Dan Field's `path_parsing` (MIT, see `LICENSE_path_parsing`).
+derives from Dan Field's `path_parsing` (MIT, see `THIRD_PARTY_NOTICES.md`).
