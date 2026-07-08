@@ -1,0 +1,41 @@
+name: iconic_morph
+description: >-
+  Path-level icon animation for Flutter — morph one SVG icon into another, plus
+  3D constant-stroke spins, draw-on, trace, and idle loops, all drawn from your
+  own SVGs. No Rive, no Lottie, no new assets, and ZERO external dependencies.
+version: 1.0.0
+
+# Authored by Armanic Studio (https://armanic.studio).
+homepage: https://armanic.studio
+repository: https://github.com/armanicdev/iconic_morph
+issue_tracker: https://github.com/armanicdev/iconic_morph/issues
+topics:
+  - icons
+  - animation
+  - svg
+  - morph
+  - motion
+
+environment:
+  sdk: ^3.10.0
+  flutter: '>=3.24.0'
+
+# Runtime dependencies: FLUTTER ONLY. The SVG path reader (lib/src/svg/, derived
+# from path_parsing — see LICENSE_path_parsing) and the 4x4 matrix math
+# (lib/src/math/mat4.dart) are bundled in-tree, so a consumer's `flutter pub get`
+# pulls in nothing beyond the Flutter SDK.
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  # Batteries-included demo icons (MorphIcons.user/face/lock) — the 3 glyphs the
+  # morph showcase + example use. Bring-your-own SVGs also work (IconicMorph.svg
+  # / IconImage.svg), so this set is a convenience, not a requirement.
+  assets:
+    - assets/icons/

@@ -1,0 +1,21 @@
+name: iconic_morph_example
+description: A tiny showcase for the iconic_morph package — the bundled user →
+  face → lock morph, a static icon, and an animated 3D unlock spin.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.0
+  flutter: '>=3.24.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # The package under test, by path — the ONLY dependency (it pulls in nothing
+  # beyond Flutter).
+  iconic_morph:
+    path: ../
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter

@@ -1,0 +1,14 @@
+# Dart / Flutter
+.dart_tool/
+.packages
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# A library package does not commit its resolved lockfile.
+pubspec.lock
+
+# IDE
+*.iml
+.idea/
+.vscode/

@@ -1,0 +1,3 @@
+# Lints for the iconic_morph package — flutter_lints is already a dev
+# dependency; this file is what actually turns it on for contributors.
+include: package:flutter_lints/flutter.yaml
