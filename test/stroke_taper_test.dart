@@ -85,6 +85,71 @@ void main() {
     });
   });
 
+  group('StrokeTaper.dissolve (the fade must last a real DURATION)', () {
+    // The bug this group exists to prevent: a fade specified as "a quarter" of
+    // the exit's PROGRESS. Progress is smoothstepped across the contour's
+    // window, so that quarter lands exactly where the smoothstep moves fastest
+    // and is over in 43 ms — under three frames at 60 Hz. On paper it was 25%;
+    // on screen it was a cut.
+    const morphMs = 640.0; // IconMotion.iconMorph
+    const window = 0.45; // _kTrimExitWindow
+    const len = 30.0;
+
+    test('unSmooth inverts the window smoothstep', () {
+      double smooth(double x) => 3 * x * x - 2 * x * x * x;
+      for (final x in [0.0, 0.15, 0.4, 0.5, 0.72, 0.9, 1.0]) {
+        expect(StrokeTaper.unSmooth(smooth(x)), closeTo(x, 1e-9));
+      }
+    });
+
+    test('a span of PROGRESS would be under three frames — never use one', () {
+      final horizon = StrokeTaper.dotHorizon(len);
+      final x1 = StrokeTaper.unSmooth(horizon);
+      final x0 = StrokeTaper.unSmooth(horizon - 0.25);
+      final ms = (x1 - x0) * window * morphMs;
+      expect(ms, lessThan(80)); // the measured 1.4.0 behaviour
+    });
+
+    test('a span of TIMELINE is the real thing — 160 ms, ~10 frames @60Hz', () {
+      const plan = IconMorphPlan();
+      final ms = plan.duration.inMilliseconds * (1 - plan.exitFade);
+      expect(ms, greaterThanOrEqualTo(120)); // >= 7 frames @60Hz
+    });
+
+    test('alpha runs 1 → 0 across the span and stays 0 past the end', () {
+      expect(StrokeTaper.dissolve(0.0, 0.35, 0.25), 1);
+      // Exactly at the start: Cubic.transform is iterative, so it lands a hair
+      // off 0 for a hair-off-0 input — opaque to any eye and any pixel.
+      expect(StrokeTaper.dissolve(0.10, 0.35, 0.25), closeTo(1, 1e-5));
+      expect(StrokeTaper.dissolve(0.225, 0.35, 0.25), closeTo(0.5, 0.02));
+      expect(StrokeTaper.dissolve(0.35, 0.35, 0.25), 0);
+      expect(StrokeTaper.dissolve(1.0, 0.35, 0.25), 0);
+    });
+
+    test('monotonic across the whole timeline', () {
+      var prev = 1.0;
+      for (var i = 0; i <= 400; i++) {
+        final a = StrokeTaper.dissolve(i / 400, 0.35, 0.25);
+        expect(a, lessThanOrEqualTo(prev + 1e-12));
+        prev = a;
+      }
+    });
+
+    test('the ink is gone by the dot horizon, mapped into timeline time', () {
+      // What the painter computes for the first leaving contour (winStart 0).
+      final horizonT = window * StrokeTaper.unSmooth(StrokeTaper.dotHorizon(len));
+      expect(StrokeTaper.dissolve(horizonT, horizonT, 0.25), 0);
+      // And it clears before the target assembles (flipStart 0.55).
+      expect(horizonT, lessThan(0.55));
+    });
+
+    test('span <= 0 degrades to a hard cut at the end, not to always-visible',
+        () {
+      expect(StrokeTaper.dissolve(0.3, 0.35, 0), 1);
+      expect(StrokeTaper.dissolve(0.35, 0.35, 0), 0);
+    });
+  });
+
   group('StrokeTaper.exitAlpha (the dissolve, anchored to geometry)', () {
     // The exit's visible length tracks (1 - prog), so a 30-unit contour with a
     // 2-unit stroke is dot-shaped (< 2 stroke-widths = 4 units) from prog 0.867.

@@ -127,8 +127,40 @@ abstract final class StrokeTaper {
     return (1 - dotLen / fullLength).clamp(0.0, 1.0);
   }
 
-  /// **The exit dissolve, anchored to geometry** — alpha for a contour of
+  /// Inverse of the Hermite smoothstep `3y² - 2y³` — the input that produces
+  /// [y]. The exit's per-contour progress is smoothstepped, so this is what
+  /// converts a point in PROGRESS space back into a point in the window's real
+  /// TIME. Without it, a fade specified as "a quarter of the progress" lands
+  /// wherever the smoothstep happens to be moving fastest and can be over in a
+  /// couple of frames.
+  static double unSmooth(double y) {
+    final c = y.clamp(0.0, 1.0);
+    return 0.5 - math.sin(math.asin(1 - 2 * c) / 3);
+  }
+
+  /// **The dissolve, in real time.** Alpha for a leaving stroke at timeline
+  /// position [t], fading to nothing over the [span] of timeline that ends at
+  /// [end]. Zero from [end] onward.
+  ///
+  /// Both arguments are fractions of the WHOLE animation, not of the exit's
+  /// progress — that distinction is the fix for a fade that measured 25% on
+  /// paper and 43 ms (under three frames) on screen. Feed [end] the dot horizon
+  /// mapped through [unSmooth], and the dissolve both lasts a real duration and
+  /// finishes before the ink could become a dot.
+  static double dissolve(double t, double end, double span) {
+    if (span <= 0) return t >= end ? 0 : 1;
+    if (t >= end) return 0;
+    final start = end - span;
+    if (t <= start) return 1;
+    return 1 - Curves.easeInOut.transform((t - start) / span);
+  }
+
+  /// **The exit dissolve in PROGRESS space** — alpha for a contour of
   /// [fullLength] at exit progress [prog].
+  ///
+  /// Correct but easy to misjudge: a span given here is a span of progress, and
+  /// progress is rarely linear in time. Prefer [dissolve] with [unSmooth]
+  /// whenever the caller knows the timeline, which is what the morph does.
   ///
   /// The fade still lasts the requested slice of the timeline (`1 - [fadeStart]`,
   /// e.g. the last quarter), but it **finishes at [dotHorizon] rather than at

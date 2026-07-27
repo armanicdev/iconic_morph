@@ -365,7 +365,13 @@ class IconicMorphPainter extends CustomPainter {
   /// (non-hero) pieces UN-DRAW over this span. A featured pen-lift, so it's
   /// roomier than the fade/scale window — still capped under a smaller user
   /// `headFade`, and it clears well before the target assembles (`flipStart`).
-  static const double _kTrimExitWindow = 0.35;
+  ///
+  /// Sized so the retract can be seen at full ink BEFORE the dissolve starts:
+  /// the ink is gone by this contour's dot horizon at ~77% of the window, so at
+  /// 0.45 of a 640 ms morph the un-draw reads for ~110 ms and then dissolves for
+  /// the ~160 ms the plan asks for, still clearing before `flipStart` (0.55).
+  /// At the old 0.35 the two overlapped into one hurried beat.
+  static const double _kTrimExitWindow = 0.45;
 
   /// Exit window for [MorphExit.fade] / [MorphExit.scale] — a snappy hide so the
   /// arriving glyph isn't competing with the old one.
@@ -545,19 +551,34 @@ class IconicMorphPainter extends CustomPainter {
     final maxStart = window * _kExitStaggerSpan;
     final step = n <= 1 ? 0.0 : maxStart / (n - 1);
     for (var i = 0; i < n; i++) {
+      final c = rest[i];
       final winStart = step * i;
       final prog = _smoothstep(winStart, window, t); // 0 (present) → 1 (gone)
-      _paintLeavingContour(canvas, rest[i], exit, prog, paint);
+      // Where this contour's ink stops being a line, expressed in TIMELINE time:
+      // its dot horizon is a point in PROGRESS, and progress is smoothstepped
+      // across the window, so it has to be mapped back through the inverse. Skip
+      // that and a "quarter of the exit" dissolve lands where the smoothstep is
+      // fastest and is over in ~2 frames — which is a cut, not a fade.
+      final horizonT = winStart +
+          (window - winStart) *
+              StrokeTaper.unSmooth(
+                  StrokeTaper.dotHorizon(c.length, strokeWidth));
+      _paintLeavingContour(canvas, c, exit, prog, horizonT, t, paint);
     }
   }
 
   /// Paint ONE leaving contour at exit-progress [prog] (0 = fully present, 1 =
-  /// fully gone) under the chosen [exit] choreography. See [_paintSourceRest].
+  /// fully gone) under the chosen [exit] choreography. [horizonT] is the
+  /// timeline position by which its ink must be gone and [t] the timeline
+  /// position now — the trim exit dissolves over real time between them. See
+  /// [_paintSourceRest].
   void _paintLeavingContour(
     Canvas canvas,
     IconContour c,
     MorphExit exit,
     double prog,
+    double horizonT,
+    double t,
     Paint paint,
   ) {
     if (prog >= 1) return; // fully gone — nothing to paint
@@ -584,14 +605,14 @@ class IconicMorphPainter extends CustomPainter {
           fullLength: c.length,
           strokeWidth: strokeWidth,
         );
-        // ── Alpha: the dissolve is the whole vanish, and it is anchored to the
-        // GEOMETRY, not the clock — it finishes at the dot horizon (the moment
-        // this contour's remaining ink would stop being a line), not at the end
-        // of the exit. A fade timed to the end still shows the dot, because a
-        // stroke becomes one well before its length reaches zero.
+        // ── Alpha: the dissolve is the whole vanish. It ENDS at this contour's
+        // dot horizon (the moment its remaining ink would stop being a line —
+        // fading only until the length runs out still shows the dot), and it
+        // LASTS plan.exitFade of the real timeline, not of the exit's
+        // smoothstepped progress. Both halves matter: the first stops it ending
+        // on a dot, the second stops it being over in two frames.
         final p = StrokeTaper.weighted(paint, w,
-            alpha: StrokeTaper.exitAlpha(
-                prog, plan.exitFade, c.length, strokeWidth));
+            alpha: StrokeTaper.dissolve(t, horizonT, 1 - plan.exitFade));
         if (p == null) return; // gone — draw nothing (width 0 = hairline!)
         canvas.drawPath(PathMorph.trimmedRange(c, 0, visible), p);
       case MorphExit.fade:

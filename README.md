@@ -90,11 +90,17 @@ IconicMorph(MorphIcons.user, MorphIcons.face,
   ));
 ```
 
-The timing detail that matters: the fade is anchored to the **geometry**, not the
-clock. It finishes at each contour's *dot horizon* — the moment its shrinking ink
-would stop reading as a line (`StrokeTaper.dotHorizon`) — and nothing is drawn
-after that. A fade merely timed to the end of the exit still shows the dot, at
-30–70% alpha, because a stroke becomes one well before its length hits zero.
+Two timing details matter, and both are easy to get wrong:
+
+- **Where it ends.** At each contour's *dot horizon* — the moment its shrinking
+  ink would stop reading as a line (`StrokeTaper.dotHorizon`) — and nothing is
+  drawn after that. A fade merely timed to the end of the exit still shows the
+  dot at 30–70% alpha, because a stroke becomes one well before its length hits
+  zero.
+- **How long it lasts.** `exitFade` is a fraction of the **timeline**, not of the
+  exit's progress. Exit progress is smoothstepped, so "a quarter of the progress"
+  lands where the smoothstep moves fastest and can be over in 43 ms — under three
+  frames. A quarter of the timeline is 160 ms.
 
 **Why not thin the stroke instead?** Weight modulation is per-contour, and a
 staggered exit paints neighbours at different weights, so the glyph stops reading

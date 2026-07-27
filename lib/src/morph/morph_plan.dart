@@ -179,17 +179,24 @@ class IconMorphPlan {
   /// one balanced drawing. [exitFade] is the default vanish instead.
   final double exitTaper;
 
-  /// **Dissolve span** (0..1) — how much of a leaving contour's exit its ALPHA
-  /// takes to fade out. **This is the whole vanish.** Default 0.75 = the fade
-  /// lasts the last quarter.
+  /// **Dissolve span** (0..1) — a leaving contour's ALPHA fades to nothing over
+  /// the last `1 - exitFade` of the **whole animation**. **This is the whole
+  /// vanish.** Default 0.75 = a quarter of the morph, ≈160 ms at the default
+  /// [duration].
   ///
-  /// The fade does NOT end when the exit does. It ends at the **dot horizon** —
-  /// the moment this contour's shrinking ink would stop reading as a line and
-  /// start reading as a round-cap dot — and nothing is drawn past that. Timing
-  /// it to the end of the exit instead still shows the dot, visibly, at 30–70%
-  /// alpha, because a stroke becomes a dot a good stretch before its length
-  /// reaches zero. So the span is honoured but slid earlier, per contour, by its
-  /// own length.
+  /// Two things make it read as a fade rather than a cut, and both are easy to
+  /// get wrong:
+  ///
+  ///  * **It ends at the dot horizon**, not when the length runs out — the
+  ///    moment this contour's shrinking ink would stop reading as a line and
+  ///    start reading as a round-cap dot. Nothing is drawn past that. Fade to
+  ///    the end of the exit instead and the dot is still on screen at 30–70%
+  ///    alpha. The span is therefore honoured but slid earlier, per contour, by
+  ///    that contour's own length.
+  ///  * **It is measured in real time, not in exit progress.** Progress is
+  ///    smoothstepped across the contour's window, so a quarter of *progress*
+  ///    lands where the smoothstep is moving fastest — 43 ms, under three
+  ///    frames. A quarter of the *timeline* is 160 ms.
   ///
   /// Alpha, not weight, is what can remove a stroke without unbalancing the
   /// glyph — see [taperFloor]. 1 = no fade (a hard cut when the length runs out).

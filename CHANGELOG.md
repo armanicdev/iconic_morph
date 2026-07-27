@@ -1,5 +1,32 @@
 # Changelog
 
+## 1.5.0
+
+**The dissolve is measured in real time, and now actually lasts.** 1.4.0 put the
+fade in the right place — ending at the dot horizon — but specified its length as
+a quarter of the exit's *progress*. Progress is smoothstepped across each
+contour's window, so that quarter landed exactly where the smoothstep moves
+fastest: 19% of the window, **43 ms, under three frames at 60 Hz**. On paper a
+quarter; on screen a cut. It is now a quarter of the **timeline** — 160 ms, ten
+frames at 60 Hz and nineteen at 120 Hz.
+
+### Added
+- **`StrokeTaper.unSmooth(y)`** — inverse of the Hermite smoothstep, which is
+  what converts a point in progress space back into the window's real time.
+- **`StrokeTaper.dissolve(t, end, span)`** — the fade in timeline units. The
+  morph feeds it the dot horizon mapped through `unSmooth`, so the dissolve both
+  lasts a real duration and finishes before the ink could become a dot.
+
+### Changed
+- `IconMorphPlan.exitFade` (still `0.75`) now means *the dissolve spans the last
+  quarter of the animation*, not of the exit's progress.
+- The trim exit window widens from `0.35` to `0.45` of the timeline, so the
+  un-draw reads at full ink for ~60 ms before the dissolve starts instead of the
+  two overlapping into one hurried beat. The ink is still gone by t ≈ 0.35, well
+  before the target assembles at `flipStart` 0.55.
+- `StrokeTaper.exitAlpha` (progress space) is kept for callers that have no
+  timeline, but the morph no longer uses it.
+
 ## 1.4.0
 
 **The dissolve is anchored to the geometry, not to the clock.** 1.3.0 faded a
