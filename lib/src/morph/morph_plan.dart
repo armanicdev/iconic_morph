@@ -179,16 +179,20 @@ class IconMorphPlan {
   /// one balanced drawing. [exitFade] is the default vanish instead.
   final double exitTaper;
 
-  /// **Dissolve start** (0..1) — the point in a leaving contour's exit where its
-  /// ALPHA starts fading out, reaching zero at the end of the exit. **This is the
-  /// whole vanish.**
+  /// **Dissolve span** (0..1) — how much of a leaving contour's exit its ALPHA
+  /// takes to fade out. **This is the whole vanish.** Default 0.75 = the fade
+  /// lasts the last quarter.
   ///
-  /// Default 0.75: the ink retracts at its true weight for three quarters of the
-  /// exit, then dissolves over the last quarter. Alpha, not weight, is what can
-  /// remove a stroke without unbalancing the glyph — and it is also what solves
-  /// the terminal dot, since a round-capped stroke shorter than its own width IS
-  /// a dot and no length curve can hide that. 1 = no fade (the ink is removed
-  /// only by its length running out — the pre-1.1 hard cut).
+  /// The fade does NOT end when the exit does. It ends at the **dot horizon** —
+  /// the moment this contour's shrinking ink would stop reading as a line and
+  /// start reading as a round-cap dot — and nothing is drawn past that. Timing
+  /// it to the end of the exit instead still shows the dot, visibly, at 30–70%
+  /// alpha, because a stroke becomes a dot a good stretch before its length
+  /// reaches zero. So the span is honoured but slid earlier, per contour, by its
+  /// own length.
+  ///
+  /// Alpha, not weight, is what can remove a stroke without unbalancing the
+  /// glyph — see [taperFloor]. 1 = no fade (a hard cut when the length runs out).
   final double exitFade;
 
   /// **Ink floor** (0..1) — how thin a taper may ever take the stroke, at either

@@ -1,5 +1,33 @@
 # Changelog
 
+## 1.4.0
+
+**The dissolve is anchored to the geometry, not to the clock.** 1.3.0 faded a
+leaving contour's alpha over the last quarter of its exit, ending when its length
+ended — which still showed the dot. A stroke becomes a round-cap dot a good
+stretch *before* its length reaches zero (at 2 stroke-widths of remaining
+length), and a clock-timed fade was still at 30–70% alpha there. So the dot was
+visible, then cut. The fade now **finishes at the dot horizon** and nothing is
+drawn past it: a trim-out has no dot frame at all, by construction.
+
+### Added
+- **`StrokeTaper.dotHorizon(fullLength, [strokeWidth])`** — the exit progress at
+  which a retracting contour stops reading as a line. Capped at half a contour's
+  length, so a hair-length authored dot (a keyhole) fades over its own second
+  half instead of being deleted on frame one.
+- **`StrokeTaper.exitAlpha(prog, fadeStart, fullLength, [strokeWidth])`** — the
+  dissolve that ends there. The requested span (`1 - fadeStart`, e.g. the last
+  quarter) is honoured but slid earlier, per contour, by its own length.
+- `StrokeTaper.kDotWidths` (2) — how many stroke-widths of length a stroke needs
+  to still read as a line.
+
+### Changed
+- `MorphExit.trim` uses `exitAlpha`. `IconMorphPlan.exitFade` keeps its name and
+  `0.75` default but now means *the dissolve spans the last quarter*, not *it
+  starts at 0.75*.
+- `StrokeTaper.fade` (the clock-anchored version) is retained for custom effects
+  that have no geometry to anchor to.
+
 ## 1.3.0
 
 **Weight is never modulated; the exit vanishes by alpha.** Thinning ink is

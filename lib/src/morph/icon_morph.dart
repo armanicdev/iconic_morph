@@ -584,11 +584,14 @@ class IconicMorphPainter extends CustomPainter {
           fullLength: c.length,
           strokeWidth: strokeWidth,
         );
-        // ── Alpha: the dissolve over the END of the exit is the whole vanish.
-        // It removes the ink at full weight, so the last visible frame is
-        // transparent rather than a hard cut on a round-cap dot.
+        // ── Alpha: the dissolve is the whole vanish, and it is anchored to the
+        // GEOMETRY, not the clock — it finishes at the dot horizon (the moment
+        // this contour's remaining ink would stop being a line), not at the end
+        // of the exit. A fade timed to the end still shows the dot, because a
+        // stroke becomes one well before its length reaches zero.
         final p = StrokeTaper.weighted(paint, w,
-            alpha: StrokeTaper.fade(prog, plan.exitFade));
+            alpha: StrokeTaper.exitAlpha(
+                prog, plan.exitFade, c.length, strokeWidth));
         if (p == null) return; // gone — draw nothing (width 0 = hairline!)
         canvas.drawPath(PathMorph.trimmedRange(c, 0, visible), p);
       case MorphExit.fade:

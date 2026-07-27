@@ -85,7 +85,70 @@ void main() {
     });
   });
 
-  group('StrokeTaper.fade (the dissolve that actually removes it)', () {
+  group('StrokeTaper.exitAlpha (the dissolve, anchored to geometry)', () {
+    // The exit's visible length tracks (1 - prog), so a 30-unit contour with a
+    // 2-unit stroke is dot-shaped (< 2 stroke-widths = 4 units) from prog 0.867.
+    const len = 30.0;
+
+    test('the ink is fully GONE before it could become a dot', () {
+      final horizon = StrokeTaper.dotHorizon(len);
+      expect(horizon, closeTo(1 - 4 / len, 1e-9));
+      expect(StrokeTaper.exitAlpha(horizon, 0.75, len), 0);
+      // Every frame from the horizon on draws nothing at all — this is the
+      // property that makes a dot frame impossible, not merely unlikely.
+      for (var p = horizon; p <= 1.0; p += 0.005) {
+        expect(StrokeTaper.exitAlpha(p, 0.75, len), 0);
+      }
+    });
+
+    test('while it is still a dot-sized stub, alpha is already zero', () {
+      // The old clock-anchored fade left this stub at 30–70% alpha — the "final
+      // dot" the owner kept seeing.
+      for (final prog in [0.88, 0.9, 0.95, 0.99]) {
+        final visible = len * (1 - prog);
+        expect(visible, lessThan(StrokeTaper.kDotWidths * kIconStrokeWidth));
+        expect(StrokeTaper.exitAlpha(prog, 0.75, len), 0);
+        expect(StrokeTaper.fade(prog, 0.75), greaterThan(0)); // what it replaced
+      }
+    });
+
+    test('the requested span is honoured, just slid earlier', () {
+      final horizon = StrokeTaper.dotHorizon(len);
+      expect(StrokeTaper.exitAlpha(horizon - 0.25, 0.75, len), 1); // opaque
+      expect(StrokeTaper.exitAlpha(horizon - 0.125, 0.75, len),
+          closeTo(0.5, 0.05)); // half way through the fade, half alpha
+    });
+
+    test('monotonic, and full alpha for the whole first stretch', () {
+      var prev = 1.0;
+      for (var i = 0; i <= 200; i++) {
+        final a = StrokeTaper.exitAlpha(i / 200, 0.75, len);
+        expect(a, lessThanOrEqualTo(prev + 1e-12));
+        prev = a;
+      }
+      expect(StrokeTaper.exitAlpha(0, 0.75, len), 1);
+      expect(StrokeTaper.exitAlpha(0.5, 0.75, len), 1);
+    });
+
+    test('a SHORT contour fades earlier, because it turns into a dot earlier',
+        () {
+      // 6 units of a 2-unit stroke: dot-shaped almost immediately, so the
+      // horizon is capped at half its length and it leaves in its first half.
+      expect(StrokeTaper.dotHorizon(6), closeTo(0.5, 1e-9));
+      expect(StrokeTaper.exitAlpha(0.6, 0.75, 6), 0);
+      expect(StrokeTaper.exitAlpha(0.1, 0.75, 6), 1);
+    });
+
+    test('an authored dot fades over its own second half, never deleted', () {
+      const dot = 0.01;
+      expect(StrokeTaper.dotHorizon(dot), closeTo(0.5, 1e-9));
+      expect(StrokeTaper.exitAlpha(0, 0.75, dot), 1); // present at rest
+      expect(StrokeTaper.exitAlpha(0.5, 0.75, dot), 0);
+    });
+  });
+
+  group('StrokeTaper.fade (the clock-anchored fade, kept for custom effects)',
+      () {
     test('opaque until the fade point, then out to nothing by the end', () {
       expect(StrokeTaper.fade(0, 0.75), 1);
       expect(StrokeTaper.fade(0.75, 0.75), 1); // still opaque AT the fade point

@@ -80,16 +80,21 @@ snapping to their end state.
 
 A trim-path that animates *length* alone cannot vanish cleanly — a round-capped
 stroke shorter than its own width **is** a dot, so an un-draw ends on a
-fixed-size dot and then blinks out. The fix is an **alpha dissolve over the end
-of the exit**: the ink retracts at its true weight, then fades. A transparent dot
-is simply not there.
+fixed-size dot and then blinks out. The fix is an **alpha dissolve**: the ink
+retracts at its true weight, then fades. A transparent dot is simply not there.
 
 ```dart
 IconicMorph(MorphIcons.user, MorphIcons.face,
   plan: const IconMorphPlan(
-    exitFade: 0.75,  // dissolve over the last quarter of the exit (1 = off)
+    exitFade: 0.75,  // the dissolve spans the last quarter of the exit (1 = off)
   ));
 ```
+
+The timing detail that matters: the fade is anchored to the **geometry**, not the
+clock. It finishes at each contour's *dot horizon* — the moment its shrinking ink
+would stop reading as a line (`StrokeTaper.dotHorizon`) — and nothing is drawn
+after that. A fade merely timed to the end of the exit still shows the dot, at
+30–70% alpha, because a stroke becomes one well before its length hits zero.
 
 **Why not thin the stroke instead?** Weight modulation is per-contour, and a
 staggered exit paints neighbours at different weights, so the glyph stops reading

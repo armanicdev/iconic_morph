@@ -95,17 +95,61 @@ abstract final class StrokeTaper {
   /// **The dissolve.** Alpha factor (1 → 0) over the END of a trim-out: 1 until
   /// [start] of the exit, then eased to nothing at 1.
   ///
-  /// This is what actually removes the ink. Pairing a short thinning with a late
-  /// fade is what makes a pen lift read like a pen lift — the alternative,
-  /// thinning all the way to zero, is a stroke starving to death, and it still
-  /// ends on a hard cut at whatever width the last visible frame had.
-  /// `start >= 1` disables the fade (a hard cut when the length runs out).
+  /// Anchored to the CLOCK, so it only removes ink cleanly on a contour long
+  /// enough that its last frames are still a line. Prefer [exitAlpha], which
+  /// anchors the same fade to the GEOMETRY instead. `start >= 1` disables it.
   static double fade(double prog, double start) {
     final s = start.clamp(0.0, 1.0);
     if (s >= 1) return 1;
     final u = ((prog - s) / (1 - s)).clamp(0.0, 1.0);
     if (u <= 0) return 1;
     return 1 - Curves.easeInOut.transform(u);
+  }
+
+  /// How many stroke-widths of length a stroke needs to still read as a LINE.
+  /// Below this the round caps dominate and it is a dot, whatever the geometry
+  /// says it is.
+  static const double kDotWidths = 2;
+
+  /// **The dot horizon** — the exit progress at which a retracting contour of
+  /// [fullLength] stops reading as a line and becomes a round-cap dot, assuming
+  /// its visible length tracks `1 - prog`. This is the instant the ink must
+  /// already be GONE.
+  ///
+  /// A contour that is short to begin with is dot-shaped for most of its own
+  /// retract, so the horizon is also capped at half its length — that keeps a
+  /// hair-length authored dot (a keyhole) fading over its own second half
+  /// instead of being deleted on frame one.
+  static double dotHorizon(double fullLength,
+      [double strokeWidth = kIconStrokeWidth]) {
+    if (fullLength <= 0) return 0;
+    final dotLen = math.min(kDotWidths * strokeWidth, fullLength * 0.5);
+    return (1 - dotLen / fullLength).clamp(0.0, 1.0);
+  }
+
+  /// **The exit dissolve, anchored to geometry** — alpha for a contour of
+  /// [fullLength] at exit progress [prog].
+  ///
+  /// The fade still lasts the requested slice of the timeline (`1 - [fadeStart]`,
+  /// e.g. the last quarter), but it **finishes at [dotHorizon] rather than at
+  /// the end of the exit**, and nothing is drawn after that. That difference is
+  /// the whole point: a fade that merely ends when the LENGTH ends still shows
+  /// the dot, because the stroke turns into one a good stretch before its length
+  /// reaches zero — visibly, at 30–70% alpha. Ending the dissolve on the horizon
+  /// means the ink is already invisible by the time it would have become a dot,
+  /// so a trim-out never has a dot frame at all.
+  static double exitAlpha(
+    double prog,
+    double fadeStart,
+    double fullLength, [
+    double strokeWidth = kIconStrokeWidth,
+  ]) {
+    final end = dotHorizon(fullLength, strokeWidth);
+    if (prog >= end) return 0;
+    final span = (1 - fadeStart.clamp(0.0, 0.98));
+    final start = math.max(0.0, end - span);
+    if (prog <= start) return 1;
+    return 1 - Curves.easeInOut.transform((prog - start) / (end - start));
   }
 
   /// **Trim-IN ramp.** Weight factor ([floor] → 1) for a contour that is drawing
