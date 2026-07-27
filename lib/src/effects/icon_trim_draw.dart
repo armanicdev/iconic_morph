@@ -4,7 +4,6 @@ import '../motion.dart';
 
 import '../icon_geometry.dart';
 import '../icon_effect.dart';
-import '../stroke_taper.dart';
 
 /// Trim-path "draw-on" — the icon is drawn as if by a pen, growing from 0 to its
 /// full length. Walks the pre-sampled polylines + cumulative arc-length (no
@@ -15,11 +14,6 @@ import '../stroke_taper.dart';
 ///    connected reveal). false: every contour draws simultaneously from its own
 ///    start (a blooming reveal) — nice for multi-stroke glyphs.
 ///  * [reversed] erases instead of draws (full → empty).
-///
-/// The vanishing end carries `StrokeTaper`'s no-dot law: a round-capped stroke
-/// shorter than its own width renders as a DOT, so the first sliver of a draw-on
-/// (and the last sliver of a [reversed] erase) loses WEIGHT along with length —
-/// the pen starts and finishes as ink, never as a stamped dot that pops.
 class IconTrimDraw extends IconEffect {
   const IconTrimDraw({
     this.duration = IconMotion.iconDraw,
@@ -49,8 +43,7 @@ class IconTrimDraw extends IconEffect {
     final path = Path();
 
     if (continuous) {
-      final drawn = geom.totalLength * f;
-      var budget = drawn;
+      var budget = geom.totalLength * f;
       for (final c in geom.contours) {
         if (budget <= 0) break;
         if (budget >= c.length) {
@@ -61,35 +54,12 @@ class IconTrimDraw extends IconEffect {
           break;
         }
       }
-      // One pen, one length: weight the whole trail by how much ink it has.
-      final p = StrokeTaper.weighted(
-        paint,
-        StrokeTaper.lengthClamp(drawn, geom.totalLength, paint.strokeWidth),
-      );
-      if (p != null) canvas.drawPath(path, p);
-      return;
+    } else {
+      for (final c in geom.contours) {
+        appendContourUpTo(path, c, c.length * f);
+      }
     }
 
-    // Bloom: every contour draws from its own start, so each has its OWN sliver
-    // to protect and its own weight. Those weights are 1 for every frame but the
-    // first few, so the shared path is accumulated as before and the common case
-    // stays exactly one drawPath — the per-contour path is built only for a
-    // contour that is actually still tapering.
-    final tapering = <IconContour, Paint>{};
-    for (final c in geom.contours) {
-      final w = StrokeTaper.lengthClamp(c.length * f, c.length, paint.strokeWidth);
-      if (w >= 1) {
-        appendContourUpTo(path, c, c.length * f);
-        continue;
-      }
-      final p = StrokeTaper.weighted(paint, w);
-      if (p != null) tapering[c] = p;
-    }
     canvas.drawPath(path, paint);
-    for (final entry in tapering.entries) {
-      final one = Path();
-      appendContourUpTo(one, entry.key, entry.key.length * f);
-      canvas.drawPath(one, entry.value);
-    }
   }
 }

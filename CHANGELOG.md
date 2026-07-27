@@ -1,5 +1,28 @@
 # Changelog
 
+## 1.3.0
+
+**Weight is never modulated; the exit vanishes by alpha.** Thinning ink is
+per-contour, and a staggered exit therefore paints neighbouring contours at
+different weights — the glyph stops reading as one balanced drawing. So the
+taper is off by default and an alpha dissolve over the last quarter of the exit
+is the whole vanish. It also solves the terminal dot properly: a round-capped
+stroke shorter than its own width *is* a dot, and no length curve can hide that,
+but a transparent one is simply not there.
+
+### Changed
+- **`IconMorphPlan.taperFloor` now defaults to `1`** — stroke weight untouched at
+  both ends. `exitTaper` / `assembleTaper` remain, inert until the floor is
+  lowered.
+- **`StrokeTaper.kFloor` is `1`**, and the new `StrokeTaper.exitWeight` /
+  `entryWeight` fold in the rule that a floor of 1 bypasses the taper *and* the
+  no-dot clamp together. There is no middle setting where weight is modulated
+  only for degenerate geometry.
+- `IconTrimDraw` and `IconDetailSpin` are back to constant weight (1.1.0 had put
+  the no-dot clamp on them; same balance argument applies).
+- `IconMorphPlan.exitFade` (`0.75`) is now the documented vanish, not a finisher
+  for the taper.
+
 ## 1.2.0
 
 **The lift is a thin-then-dissolve, not a thin-to-nothing.** 1.1.0 removed the

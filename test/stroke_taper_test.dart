@@ -19,35 +19,68 @@ Paint _base({double width = kIconStrokeWidth}) => Paint()
   ..color = const Color(0xFF000000);
 
 void main() {
-  group('StrokeTaper.out (the pen lift)', () {
+  group('StrokeTaper weight — off by default (glyph balance)', () {
+    test('the default floor never touches stroke weight, anywhere', () {
+      // Weight modulation is per-contour; with a staggered exit it paints
+      // neighbours at different weights and the glyph stops reading as one
+      // drawing. So the shipped default is: don't.
+      expect(StrokeTaper.kFloor, 1);
+      for (var i = 0; i <= 20; i++) {
+        expect(StrokeTaper.out(i / 20, 0.5), 1);
+        expect(StrokeTaper.into(i / 20, 0.18), 1);
+      }
+    });
+
+    test('exitWeight/entryWeight bypass the no-dot clamp when floor is 1', () {
+      // The clamp is part of the taper, not a separate always-on thinning: a
+      // sliver of ink keeps full weight and the fade removes it.
+      expect(
+        StrokeTaper.exitWeight(
+            prog: 0.99,
+            start: 0.5,
+            floor: 1,
+            visibleLength: 0.05,
+            fullLength: 30),
+        1,
+      );
+      expect(
+        StrokeTaper.entryWeight(
+            local: 0.01, end: 0.18, floor: 1, drawnLength: 0.05, fullLength: 30),
+        1,
+      );
+    });
+
+    test('lowering the floor turns the whole taper on, clamp included', () {
+      expect(StrokeTaper.out(1, 0.5, 0.5), closeTo(0.5, 1e-9));
+      expect(StrokeTaper.into(0, 0.18, 0.5), 0.5);
+      final w = StrokeTaper.exitWeight(
+          prog: 0.99, start: 0.5, floor: 0.5, visibleLength: 0.05, fullLength: 30);
+      expect(w, lessThan(0.5)); // the clamp is under the floor, as documented
+    });
+  });
+
+  group('StrokeTaper.out (the opt-in pen lift)', () {
     test('holds full weight until the taper point, then eases to the floor', () {
-      expect(StrokeTaper.out(0, 0.5), 1);
-      expect(StrokeTaper.out(0.5, 0.5), 1); // still full AT the taper point
-      expect(StrokeTaper.out(0.75, 0.5), lessThan(1));
-      expect(StrokeTaper.out(0.75, 0.5), greaterThan(StrokeTaper.kFloor));
-      // Stops at the floor — it thins, it does NOT starve to nothing. Removing
-      // the ink is StrokeTaper.fade's job.
-      expect(StrokeTaper.out(1, 0.5), closeTo(StrokeTaper.kFloor, 1e-9));
+      expect(StrokeTaper.out(0, 0.5, 0.5), 1);
+      expect(StrokeTaper.out(0.5, 0.5, 0.5), 1); // still full AT the taper point
+      expect(StrokeTaper.out(0.75, 0.5, 0.5), lessThan(1));
+      expect(StrokeTaper.out(0.75, 0.5, 0.5), greaterThan(0.5));
+      expect(StrokeTaper.out(1, 0.5, 0.5), closeTo(0.5, 1e-9));
     });
 
     test('never rises, and never goes under the floor', () {
       var prev = 1.0;
       for (var i = 0; i <= 100; i++) {
-        final w = StrokeTaper.out(i / 100, 0.5);
+        final w = StrokeTaper.out(i / 100, 0.5, 0.5);
         expect(w, lessThanOrEqualTo(prev + 1e-12));
-        expect(w, greaterThanOrEqualTo(StrokeTaper.kFloor - 1e-12));
+        expect(w, greaterThanOrEqualTo(0.5 - 1e-12));
         prev = w;
       }
     });
 
-    test('the floor is a parameter — 1 keeps constant weight, 0 thins away', () {
-      expect(StrokeTaper.out(1, 0.5, 1), 1);
-      expect(StrokeTaper.out(1, 0.5, 0), closeTo(0, 1e-9));
-    });
-
     test('start >= 1 disables the taper (constant weight)', () {
       for (var i = 0; i <= 10; i++) {
-        expect(StrokeTaper.out(i / 10, 1), 1);
+        expect(StrokeTaper.out(i / 10, 1, 0.5), 1);
       }
     });
   });
@@ -75,17 +108,17 @@ void main() {
     });
   });
 
-  group('StrokeTaper.into (the nib pressing down)', () {
+  group('StrokeTaper.into (the opt-in nib press-down)', () {
     test('starts at the floor and reaches full weight by the ramp end', () {
-      expect(StrokeTaper.into(0, 0.2), StrokeTaper.kFloor);
-      expect(StrokeTaper.into(0.1, 0.2), greaterThan(StrokeTaper.kFloor));
-      expect(StrokeTaper.into(0.1, 0.2), lessThan(1));
-      expect(StrokeTaper.into(0.2, 0.2), 1);
-      expect(StrokeTaper.into(1, 0.2), 1); // and holds it for the whole draw
+      expect(StrokeTaper.into(0, 0.2, 0.5), 0.5);
+      expect(StrokeTaper.into(0.1, 0.2, 0.5), greaterThan(0.5));
+      expect(StrokeTaper.into(0.1, 0.2, 0.5), lessThan(1));
+      expect(StrokeTaper.into(0.2, 0.2, 0.5), 1);
+      expect(StrokeTaper.into(1, 0.2, 0.5), 1); // and holds it for the draw
     });
 
     test('end <= 0 disables the ramp (full weight from the first pixel)', () {
-      expect(StrokeTaper.into(0, 0), 1);
+      expect(StrokeTaper.into(0, 0, 0.5), 1);
     });
   });
 
@@ -178,12 +211,11 @@ void main() {
   });
 
   group('IconMorphPlan taper knobs', () {
-    test('defaults: thin from half-way, to half weight, dissolve over the last '
-        'quarter', () {
+    test('defaults: no thinning at all, dissolve over the last quarter', () {
       const plan = IconMorphPlan();
-      expect(plan.exitTaper, 0.5);
-      expect(plan.taperFloor, 0.5);
-      expect(plan.exitFade, 0.75);
+      expect(plan.taperFloor, 1); // weight is never touched
+      expect(plan.exitFade, 0.75); // alpha is the whole vanish
+      expect(plan.exitTaper, 0.5); // present but inert while the floor is 1
       expect(plan.assembleTaper, 0.18);
     });
 

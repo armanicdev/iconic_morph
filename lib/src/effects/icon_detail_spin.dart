@@ -8,7 +8,6 @@ import '../motion.dart';
 import '../icon_geometry.dart';
 import '../icon_effect.dart';
 import '../projection_3d.dart';
-import '../stroke_taper.dart';
 
 /// A "knock" press animation composed per-contour on one timeline:
 ///  1. the icon's small **accent** detail trims OUT (e.g. a home-screen smile),
@@ -90,11 +89,6 @@ class IconDetailSpin extends IconEffect {
     // beginning at the start reads as a continuation, not a reversal. ───────────
     final accentPath = Path();
     var hasAccent = false;
-    // The accent is the glyph's SHORTEST contour, so its trim spends most of its
-    // life near the length where a round-capped stroke degenerates into a dot.
-    // Weight it by the ink it still has (min across accents — they share one
-    // drawPath), so it drains away and returns as a stroke, never as a stamp.
-    var weight = 1.0;
     if (t <= _outEnd) {
       // Ease-OUT attack: the drain starts the instant the finger lands (the
       // responsive tick), then softens — an ease-in here reads as input lag.
@@ -109,11 +103,6 @@ class IconDetailSpin extends IconEffect {
             contour.length * g,
             contour.length,
           );
-          weight = math.min(
-            weight,
-            StrokeTaper.lengthClamp(
-                contour.length * (1 - g), contour.length, paint.strokeWidth),
-          );
           hasAccent = true;
         }
       }
@@ -127,18 +116,11 @@ class IconDetailSpin extends IconEffect {
           // appendContourUpTo re-closes a fully-drawn closed contour so the final
           // join is a miter rather than an open round-cap seam.
           appendContourUpTo(accentPath, contour, contour.length * f);
-          weight = math.min(
-            weight,
-            StrokeTaper.lengthClamp(
-                contour.length * f, contour.length, paint.strokeWidth),
-          );
           hasAccent = true;
         }
       }
     }
-    if (!hasAccent) return;
-    final accentPaint = StrokeTaper.weighted(paint, weight);
-    if (accentPaint != null) canvas.drawPath(accentPath, accentPaint);
+    if (hasAccent) canvas.drawPath(accentPath, paint);
   }
 
   static int _shortestContour(IconGeometry geom) {

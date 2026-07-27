@@ -30,10 +30,10 @@ enum MorphExit {
   /// Leaving pieces **un-draw**: each retracts along its own length from its open
   /// end (trim-path reversed), the pen lifting and pulling the ink back — the
   /// temporal mirror of the target's [MorphAssemble.trim] draw-on. Not the
-  /// [fade] dissolve: the ink stays itself and loses its LENGTH, thinning a
-  /// little past [IconMorphPlan.exitTaper] and dissolving only over the last of
-  /// the exit ([IconMorphPlan.exitFade]) — so the stroke lifts away instead of
-  /// collapsing into a round-cap dot. This is the default.
+  /// [fade] dissolve, which is gone from frame one: the ink retracts at its true
+  /// weight and only dissolves over the last of the exit
+  /// ([IconMorphPlan.exitFade]) — so the stroke lifts away instead of ending on
+  /// a round-cap dot. This is the default.
   trim,
 
   /// Leaving pieces **fade** their alpha to 0 — the original behavior, kept as an
@@ -86,7 +86,7 @@ class IconMorphPlan {
     this.flipStagger = 0.1,
     this.exitTaper = 0.5,
     this.exitFade = 0.75,
-    this.taperFloor = 0.5,
+    this.taperFloor = 1,
     this.assembleTaper = 0.18,
     this.perspective = 0.0028,
     this.assemble = MorphAssemble.trim,
@@ -173,38 +173,37 @@ class IconMorphPlan {
   /// **Pen-lift taper** (0..1) — the point in a leaving contour's exit after which
   /// its STROKE WEIGHT starts easing down toward [taperFloor].
   ///
-  /// A trim that animates length alone cannot vanish cleanly: a round-capped
-  /// stroke shorter than its own width IS a dot, so the last stretch of every
-  /// retract used to park a fixed-size dot on screen and then blink it away.
-  /// Default 0.5 — full weight for the first half of the exit (the retract reads
-  /// as a real line being pulled back), thinning across the second half. It stops
-  /// at [taperFloor]; [exitFade] is what removes it. 1 = no taper.
+  /// **Inert unless [taperFloor] is lowered below 1**, which it is not by default:
+  /// weight modulation is per-contour, and a staggered exit therefore paints
+  /// neighbouring contours at different weights, so the glyph stops reading as
+  /// one balanced drawing. [exitFade] is the default vanish instead.
   final double exitTaper;
 
   /// **Dissolve start** (0..1) — the point in a leaving contour's exit where its
-  /// ALPHA starts fading out, reaching zero at the end of the exit.
+  /// ALPHA starts fading out, reaching zero at the end of the exit. **This is the
+  /// whole vanish.**
   ///
-  /// Default 0.75: the ink thins a little, then dissolves over the last quarter.
-  /// This is what actually removes the stroke — thinning alone all the way to
-  /// zero reads as a line starving rather than a pen lifting. 1 = no fade (the
-  /// ink is removed only by its length running out).
+  /// Default 0.75: the ink retracts at its true weight for three quarters of the
+  /// exit, then dissolves over the last quarter. Alpha, not weight, is what can
+  /// remove a stroke without unbalancing the glyph — and it is also what solves
+  /// the terminal dot, since a round-capped stroke shorter than its own width IS
+  /// a dot and no length curve can hide that. 1 = no fade (the ink is removed
+  /// only by its length running out — the pre-1.1 hard cut).
   final double exitFade;
 
-  /// **Ink floor** (0..1) — how thin a taper is ever allowed to take the stroke,
-  /// at either end. Default 0.5: ink thins to half weight and no further.
+  /// **Ink floor** (0..1) — how thin a taper may ever take the stroke, at either
+  /// end. **Default 1: stroke weight is never touched.**
   ///
-  /// Applies to both [exitTaper] (thinning out) and [assembleTaper] (pressing
-  /// in). 1 = never thin at all; 0 = thin all the way to nothing.
+  /// Lower it (e.g. 0.5) for a deliberate pen-lift, which enables [exitTaper],
+  /// [assembleTaper] AND the engine's no-dot clamp together. There is no middle
+  /// setting where weight is modulated only for degenerate geometry: either ink
+  /// keeps its weight everywhere, or the taper owns it.
   final double taperFloor;
 
   /// **Nib press-down** (0..1) — the fraction of an arriving contour's draw-on
   /// ([MorphAssemble.trim]) over which its stroke weight ramps from [taperFloor]
-  /// up to full, the mirror of [exitTaper].
-  ///
-  /// Without it a draw-on stamps a full-weight round-cap dot on its first frame
-  /// and grows out of it. Default 0.18 — the piece is at full weight after the
-  /// first fifth of its own draw, so it matches the static glyph everywhere it
-  /// matters and only the entry is soft. 0 = full weight from the first pixel.
+  /// up to full, the mirror of [exitTaper]. Like it, **inert unless [taperFloor]
+  /// is lowered below 1**. Default 0.18.
   final double assembleTaper;
 
   /// 3D perspective strength for the flip-in (used only when [assemble] is

@@ -46,10 +46,15 @@ import 'icon_effect.dart';
 /// Pure and stateless: every method is a function of its arguments, so a
 /// reversed/scrubbed playback rewinds the weight exactly like the geometry.
 abstract final class StrokeTaper {
-  /// How thin a taper is allowed to take the ink: **half weight**. A stroke that
-  /// keeps thinning toward zero reads as starving rather than lifting, so the
-  /// taper stops here and [fade] does the removing.
-  static const double kFloor = 0.5;
+  /// How thin a taper is allowed to take the ink. **1 = never thin**, the
+  /// default: modulating stroke weight per contour makes a glyph read UNBALANCED
+  /// — with a staggered exit, one contour sits at full weight while its neighbour
+  /// is half, and the icon stops looking like one drawing. [fade] removes ink
+  /// without touching weight, so it is the whole vanish by default.
+  ///
+  /// Lower it (e.g. 0.5) only for a deliberate pen-lift, and note that a floor
+  /// below 1 also enables the no-dot clamp ([exitWeight] / [entryWeight]).
+  static const double kFloor = 1;
 
   /// Ink is never allowed to be fatter than `1 / [kLengthRatio]` of the length it
   /// still has — the ratio at which a round-capped stroke stops reading as a
@@ -140,6 +145,48 @@ abstract final class StrokeTaper {
     final ref = math.min(kLengthRatio * strokeWidth, fullLength);
     if (ref <= 0) return 1;
     return (visibleLength / ref).clamp(0.0, 1.0);
+  }
+
+  /// **The exit's weight factor**, all of it: the [out] taper and the no-dot
+  /// clamp combined, with the one rule that keeps a glyph balanced —
+  /// **`floor >= 1` means the stroke width is never touched at all**, clamp
+  /// included, and [fade] alone does the vanishing.
+  ///
+  /// That gate is deliberate. Weight modulation is per-contour, and a staggered
+  /// exit therefore paints neighbours at different weights: the icon stops
+  /// reading as one drawing. Ink either keeps its weight, or the taper is on and
+  /// the clamp comes with it (there is no coherent middle where a contour thins
+  /// only when its geometry degenerates).
+  static double exitWeight({
+    required double prog,
+    required double start,
+    required double floor,
+    required double visibleLength,
+    required double fullLength,
+    double strokeWidth = kIconStrokeWidth,
+  }) {
+    if (floor >= 1) return 1;
+    return math.min(
+      out(prog, start, floor),
+      lengthClamp(visibleLength, fullLength, strokeWidth),
+    );
+  }
+
+  /// The draw-on mirror of [exitWeight] — the [into] press-down plus the no-dot
+  /// clamp, and the same `floor >= 1` gate that leaves weight untouched.
+  static double entryWeight({
+    required double local,
+    required double end,
+    required double floor,
+    required double drawnLength,
+    required double fullLength,
+    double strokeWidth = kIconStrokeWidth,
+  }) {
+    if (floor >= 1) return 1;
+    return math.min(
+      into(local, end, floor),
+      lengthClamp(drawnLength, fullLength, strokeWidth),
+    );
   }
 
   /// Applies a weight [factor] and an [alpha] to [base], returning the [Paint] to

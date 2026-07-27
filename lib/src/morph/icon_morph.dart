@@ -573,18 +573,20 @@ class IconicMorphPainter extends CustomPainter {
         // (easeOutCubic, then easeOutQuad) turned the ink into a stub while it
         // was still fully opaque, which is exactly what reads as a dot.
         final visible = 1 - prog;
-        // ── Weight: past plan.exitTaper the stroke thins toward plan.taperFloor
-        // — a lift, not a starve; it deliberately stops at half. The no-dot clamp
-        // sits under it as a safety net (ink is never wider than a third of the
-        // length it has left), which only bites once the fade has the ink near
-        // transparent anyway.
-        final w = math.min(
-          StrokeTaper.out(prog, plan.exitTaper, plan.taperFloor),
-          StrokeTaper.lengthClamp(c.length * visible, c.length, strokeWidth),
+        // ── Weight: untouched by default (plan.taperFloor 1). Thinning is
+        // per-contour, and with a staggered exit that paints neighbours at
+        // different weights — the glyph stops reading as one balanced drawing.
+        final w = StrokeTaper.exitWeight(
+          prog: prog,
+          start: plan.exitTaper,
+          floor: plan.taperFloor,
+          visibleLength: c.length * visible,
+          fullLength: c.length,
+          strokeWidth: strokeWidth,
         );
-        // ── Alpha: the dissolve over the END of the exit is what actually
-        // removes the ink, so the last visible frame is transparent rather than
-        // a hard cut at whatever width it happened to have.
+        // ── Alpha: the dissolve over the END of the exit is the whole vanish.
+        // It removes the ink at full weight, so the last visible frame is
+        // transparent rather than a hard cut on a round-cap dot.
         final p = StrokeTaper.weighted(paint, w,
             alpha: StrokeTaper.fade(prog, plan.exitFade));
         if (p == null) return; // gone — draw nothing (width 0 = hairline!)
@@ -632,15 +634,18 @@ class IconicMorphPainter extends CustomPainter {
 
       switch (plan.assemble) {
         case MorphAssemble.trim:
-          // Draw-on: reveal the contour along its own length as the line lands —
-          // and let the nib PRESS DOWN as it starts (plan.assembleTaper) instead
-          // of stamping a full-weight round-cap dot on the first frame. Same
-          // no-dot clamp as the exit, so the entry can never blob whatever the
-          // knob says. This is the exit's mirror: weight in, weight out.
+          // Draw-on: reveal the contour along its own length as the line lands.
+          // Weight is untouched by default — same balance rule as the exit; a
+          // nib press-down is available (plan.assembleTaper) but only takes
+          // effect when plan.taperFloor drops below 1.
           final c = flips[i];
-          final w = math.min(
-            StrokeTaper.into(local, plan.assembleTaper, plan.taperFloor),
-            StrokeTaper.lengthClamp(c.length * e, c.length, strokeWidth),
+          final w = StrokeTaper.entryWeight(
+            local: local,
+            end: plan.assembleTaper,
+            floor: plan.taperFloor,
+            drawnLength: c.length * e,
+            fullLength: c.length,
+            strokeWidth: strokeWidth,
           );
           final p = StrokeTaper.weighted(paint, w);
           if (p != null) canvas.drawPath(PathMorph.trimmedContour(c, e), p);

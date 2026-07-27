@@ -76,27 +76,29 @@ Compose them with `IconSequence([IconStep(...), …])`. Drive playback with an
 All effects honour the OS reduce-motion setting (`IconMotion.reduced`) by
 snapping to their end state.
 
-## Ink that lifts away (trim-path weight)
+## Ink that lifts away (how a trim-path ends)
 
 A trim-path that animates *length* alone cannot vanish cleanly — a round-capped
-stroke shorter than its own width **is** a dot, so an un-draw ends on one and a
-draw-on starts by stamping one. `StrokeTaper` fixes that by weighting ink to the
-length it has: a retract thins as it shortens (to half, not to nothing — a stroke
-that keeps thinning reads as starving) and then **dissolves** over the end, while
-a draw-on presses the nib down as it starts. On by default, tunable per morph:
+stroke shorter than its own width **is** a dot, so an un-draw ends on a
+fixed-size dot and then blinks out. The fix is an **alpha dissolve over the end
+of the exit**: the ink retracts at its true weight, then fades. A transparent dot
+is simply not there.
 
 ```dart
 IconicMorph(MorphIcons.user, MorphIcons.face,
   plan: const IconMorphPlan(
-    exitTaper: 0.5,      // weight starts easing down at half the exit (1 = off)
-    taperFloor: 0.5,     // and never thins past half (1 = never thin)
-    exitFade: 0.75,      // the dissolve runs over the last quarter (1 = off)
-    assembleTaper: 0.18, // full weight by a fifth of the draw-on (0 = off)
+    exitFade: 0.75,  // dissolve over the last quarter of the exit (1 = off)
   ));
 ```
 
+**Why not thin the stroke instead?** Weight modulation is per-contour, and a
+staggered exit paints neighbours at different weights, so the glyph stops reading
+as one balanced drawing. The taper exists (`taperFloor`, `exitTaper`,
+`assembleTaper` — a pen lift and a nib press-down, plus a no-dot clamp) but is
+**off by default**; lower `taperFloor` below 1 to opt in.
+
 `StrokeTaper` is exported, so custom effects get the same law — note that
-`weighted()` returns **`null`** when the ink is spent, which means *draw nothing*
+`weighted()` returns **`null`** when the ink is gone, which means *draw nothing*
 (`strokeWidth = 0` is Skia's hairline mode, not invisibility).
 
 ## Skip runtime SVG parsing (bake a manifest)
