@@ -9,6 +9,7 @@ import '../icon_effect.dart';
 import '../icon_geometry.dart';
 import '../animated_icon.dart';
 import '../projection_3d.dart';
+import '../stroke_taper.dart';
 import 'morph_geometry.dart';
 import 'morph_plan.dart';
 import 'path_morph.dart';
@@ -566,9 +567,26 @@ class IconicMorphPainter extends CustomPainter {
     }
     switch (exit) {
       case MorphExit.trim:
-        // Retract from the open end: visible length full → 0 as prog 0 → 1.
-        final e = Curves.easeOutCubic.transform(prog);
-        canvas.drawPath(PathMorph.trimmedRange(c, 0, 1 - e), paint);
+        // ── Length: retract from the open end, full → 0 as prog 0 → 1. ONE
+        // shaping curve on top of the smoothstep'd window. (It used to be an
+        // easeOutCubic ON TOP of that smoothstep — a double ease that spent 99%
+        // of the length in the first 70% of the exit and then left a stub parked
+        // on screen for the rest, which is what read as a dot.) easeOutQuad keeps
+        // the exit decisive — three quarters of the ink gone by the midpoint, so
+        // it still clears well before the target assembles — without parking.
+        final e = Curves.easeOutQuad.transform(prog);
+        final visible = 1 - e;
+        // ── Weight: the ink also RUNS OUT. Past plan.exitTaper the stroke thins
+        // to nothing, and the no-dot clamp independently forbids ink wider than a
+        // third of the length it has left — so the retract ends as a vanishing
+        // hair, never as the round-cap dot a length-only trim always ends on.
+        final w = math.min(
+          StrokeTaper.out(prog, plan.exitTaper),
+          StrokeTaper.lengthClamp(c.length * visible, c.length, strokeWidth),
+        );
+        final p = StrokeTaper.weighted(paint, w);
+        if (p == null) return; // ink spent — draw nothing (width 0 = hairline!)
+        canvas.drawPath(PathMorph.trimmedRange(c, 0, visible), p);
       case MorphExit.fade:
         canvas.drawPath(c.polygon, tintStroke(paint, 1 - prog));
       case MorphExit.scale:
@@ -612,8 +630,18 @@ class IconicMorphPainter extends CustomPainter {
 
       switch (plan.assemble) {
         case MorphAssemble.trim:
-          // Draw-on: reveal the contour along its own length as the line lands.
-          canvas.drawPath(PathMorph.trimmedContour(flips[i], e), paint);
+          // Draw-on: reveal the contour along its own length as the line lands —
+          // and let the nib PRESS DOWN as it starts (plan.assembleTaper) instead
+          // of stamping a full-weight round-cap dot on the first frame. Same
+          // no-dot clamp as the exit, so the entry can never blob whatever the
+          // knob says. This is the exit's mirror: weight in, weight out.
+          final c = flips[i];
+          final w = math.min(
+            StrokeTaper.into(local, plan.assembleTaper),
+            StrokeTaper.lengthClamp(c.length * e, c.length, strokeWidth),
+          );
+          final p = StrokeTaper.weighted(paint, w);
+          if (p != null) canvas.drawPath(PathMorph.trimmedContour(c, e), p);
         case MorphAssemble.flip3d:
           final angle = Projector3D.kEdgeOnEntryAngle * (1 - e); // edge-on → flat
           final sub = proj!.projectPolyline(

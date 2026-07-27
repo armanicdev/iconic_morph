@@ -29,8 +29,11 @@ enum MorphAssemble {
 enum MorphExit {
   /// Leaving pieces **un-draw**: each retracts along its own length from its open
   /// end (trim-path reversed), the pen lifting and pulling the ink back — the
-  /// temporal mirror of the target's [MorphAssemble.trim] draw-on. Full alpha, a
-  /// true erase, not a fade. This is the default.
+  /// temporal mirror of the target's [MorphAssemble.trim] draw-on. A true erase,
+  /// not an alpha fade: the ink keeps its colour and loses its LENGTH, and over
+  /// the last of the exit ([IconMorphPlan.exitTaper]) its WEIGHT as well, so the
+  /// stroke runs out to nothing instead of collapsing into a round-cap dot. This
+  /// is the default.
   trim,
 
   /// Leaving pieces **fade** their alpha to 0 — the original behavior, kept as an
@@ -81,6 +84,8 @@ class IconMorphPlan {
     this.headFade = 0.45,
     this.flipStart = 0.55,
     this.flipStagger = 0.1,
+    this.exitTaper = 0.5,
+    this.assembleTaper = 0.18,
     this.perspective = 0.0028,
     this.assemble = MorphAssemble.trim,
     this.exit = MorphExit.trim,
@@ -163,6 +168,29 @@ class IconMorphPlan {
   /// Per-contour flip-in delay (auto-normalized to the contour count).
   final double flipStagger;
 
+  /// **Pen-lift taper** (0..1) — the point in a leaving contour's exit after which
+  /// its STROKE WEIGHT also tapers to zero, so the un-draw ([MorphExit.trim])
+  /// runs the ink out instead of ending on a dot.
+  ///
+  /// A trim that animates length alone cannot vanish cleanly: a round-capped
+  /// stroke shorter than its own width IS a dot, so the last stretch of every
+  /// retract used to park a fixed-size dot on screen and then blink it away.
+  /// Default 0.5 — full weight for the first half of the exit (the retract still
+  /// reads as a real line being pulled back), thinning to nothing across the
+  /// second half, landing on 0 exactly as the length does. 1 = no taper (constant
+  /// weight); the engine's `StrokeTaper` no-dot clamp still prevents a dot.
+  final double exitTaper;
+
+  /// **Nib press-down** (0..1) — the fraction of an arriving contour's draw-on
+  /// ([MorphAssemble.trim]) over which its stroke weight ramps from nothing up to
+  /// full, the mirror of [exitTaper].
+  ///
+  /// Without it a draw-on stamps a full-weight round-cap dot on its first frame
+  /// and grows out of it. Default 0.18 — the piece is at full weight after the
+  /// first fifth of its own draw, so it matches the static glyph everywhere it
+  /// matters and only the entry is soft. 0 = full weight from the first pixel.
+  final double assembleTaper;
+
   /// 3D perspective strength for the flip-in (used only when [assemble] is
   /// [MorphAssemble.flip3d]; see `Projector3D`).
   final double perspective;
@@ -214,6 +242,8 @@ class IconMorphPlan {
     double? headFade,
     double? flipStart,
     double? flipStagger,
+    double? exitTaper,
+    double? assembleTaper,
     double? perspective,
     MorphAssemble? assemble,
     MorphExit? exit,
@@ -236,6 +266,8 @@ class IconMorphPlan {
         headFade: headFade ?? this.headFade,
         flipStart: flipStart ?? this.flipStart,
         flipStagger: flipStagger ?? this.flipStagger,
+        exitTaper: exitTaper ?? this.exitTaper,
+        assembleTaper: assembleTaper ?? this.assembleTaper,
         perspective: perspective ?? this.perspective,
         assemble: assemble ?? this.assemble,
         exit: exit ?? this.exit,
@@ -265,14 +297,19 @@ class IconMorphPlan {
           other.headFade == headFade &&
           other.flipStart == flipStart &&
           other.flipStagger == flipStagger &&
+          other.exitTaper == exitTaper &&
+          other.assembleTaper == assembleTaper &&
           other.perspective == perspective &&
           other.assemble == assemble &&
           other.exit == exit &&
           other.flipSource == flipSource &&
           other.flipTarget == flipTarget;
 
+  // hashAll, not Object.hash: the field list is past that helper's 20-argument
+  // ceiling, and a silently truncated hash would let two plans that differ only
+  // in a late field collide.
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
         duration,
         samples,
         heroAnchor,
@@ -288,12 +325,14 @@ class IconMorphPlan {
         headFade,
         flipStart,
         flipStagger,
+        exitTaper,
+        assembleTaper,
         perspective,
         assemble,
         exit,
         flipSource,
         flipTarget,
-      );
+      ]);
 
   /// Pick a contour by explicit [index] (wins), else nearest-centroid to
   /// [anchor], else the longest OPEN contour (closed rings de-weighted so a

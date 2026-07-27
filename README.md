@@ -76,6 +76,26 @@ Compose them with `IconSequence([IconStep(...), …])`. Drive playback with an
 All effects honour the OS reduce-motion setting (`IconMotion.reduced`) by
 snapping to their end state.
 
+## Ink that runs out (trim-path weight)
+
+A trim-path that animates *length* alone cannot vanish cleanly — a round-capped
+stroke shorter than its own width **is** a dot, so an un-draw ends on one and a
+draw-on starts by stamping one. `StrokeTaper` fixes that by weighting ink to the
+length it has: a retract thins to nothing as it shortens, and a draw-on presses
+the nib down as it starts. It is on by default and tunable per morph:
+
+```dart
+IconicMorph(MorphIcons.user, MorphIcons.face,
+  plan: const IconMorphPlan(
+    exitTaper: 0.5,      // weight starts running out at half the exit (1 = off)
+    assembleTaper: 0.18, // full weight by a fifth of the draw-on (0 = off)
+  ));
+```
+
+`StrokeTaper` is exported, so custom effects get the same law — note that
+`weighted()` returns **`null`** when the ink is spent, which means *draw nothing*
+(`strokeWidth = 0` is Skia's hairline mode, not invisibility).
+
 ## Skip runtime SVG parsing (bake a manifest)
 
 For production, parse your SVGs **once at build time** into a small JSON manifest

@@ -1,5 +1,43 @@
 # Changelog
 
+## 1.1.0
+
+**The ink now runs out.** A trim-path that animates length alone cannot vanish
+cleanly: a round-capped stroke shorter than its own width *is* a dot, so every
+un-draw used to end on a fixed-size dot that then blinked out of existence, and
+every draw-on began by stamping one. Ink is now weighted by the length it has,
+so a stroke starts and finishes as a stroke.
+
+### Added
+- **`StrokeTaper`** — the weight law for a trim-path end, and the one home for
+  it: `out` (the pen lift), `into` (the nib pressing down), `lengthClamp` (the
+  unconditional no-dot safety net — ink is never wider than a third of the
+  length it has left), and `weighted`, which returns the `Paint` to stroke with
+  or **`null` once the ink is spent**. That null matters: `strokeWidth = 0` is
+  Skia's *hairline* mode (a 1px line), not invisibility, so a width animated to
+  zero would otherwise end on a flash. Below a minimum renderable width it holds
+  the floor and pays the remainder in alpha, so the vanish stays smooth instead
+  of aliasing into sub-pixel shimmer.
+- **`IconMorphPlan.exitTaper`** (default `0.5`) — where in a leaving contour's
+  exit its weight starts running out. `1` restores constant weight.
+- **`IconMorphPlan.assembleTaper`** (default `0.18`) — how much of an arriving
+  contour's draw-on the nib takes to reach full weight. `0` disables it.
+
+### Changed
+- `MorphExit.trim` no longer double-eases. The per-contour window is already a
+  Hermite smoothstep; an `easeOutCubic` on top of it spent 99% of the length in
+  the first 70% of the exit and then parked the remaining stub on screen for the
+  rest — which is what read as "a dot that hangs, then cuts". One `easeOutQuad`
+  now shapes it: still decisive (three quarters of the ink gone by the midpoint,
+  clearing well before the target assembles), without the park.
+- `MorphAssemble.trim`, `IconTrimDraw` (both directions, continuous and bloom)
+  and `IconDetailSpin`'s accent trim all carry the no-dot law. Genuine authored
+  dots — contours whose whole length is a hair — keep full weight and shrink
+  out, rather than being erased for being short.
+- `IconMorphPlan.hashCode` moved to `Object.hashAll`: the field list passed
+  `Object.hash`'s 20-argument ceiling, where a further field would have been
+  silently dropped from the hash.
+
 ## 1.0.2
 
 - Packaging & docs only — no API or behaviour changes. Rename the vendored
