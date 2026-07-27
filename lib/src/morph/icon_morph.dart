@@ -567,25 +567,27 @@ class IconicMorphPainter extends CustomPainter {
     }
     switch (exit) {
       case MorphExit.trim:
-        // ── Length: retract from the open end, full → 0 as prog 0 → 1. ONE
-        // shaping curve on top of the smoothstep'd window. (It used to be an
-        // easeOutCubic ON TOP of that smoothstep — a double ease that spent 99%
-        // of the length in the first 70% of the exit and then left a stub parked
-        // on screen for the rest, which is what read as a dot.) easeOutQuad keeps
-        // the exit decisive — three quarters of the ink gone by the midpoint, so
-        // it still clears well before the target assembles — without parking.
-        final e = Curves.easeOutQuad.transform(prog);
-        final visible = 1 - e;
-        // ── Weight: the ink also RUNS OUT. Past plan.exitTaper the stroke thins
-        // to nothing, and the no-dot clamp independently forbids ink wider than a
-        // third of the length it has left — so the retract ends as a vanishing
-        // hair, never as the round-cap dot a length-only trim always ends on.
+        // ── Length: retract from the open end, tracking [prog] directly. NO
+        // second curve on top — prog is already a Hermite smoothstep of this
+        // contour's window, and every front-loaded curve tried on top of it
+        // (easeOutCubic, then easeOutQuad) turned the ink into a stub while it
+        // was still fully opaque, which is exactly what reads as a dot.
+        final visible = 1 - prog;
+        // ── Weight: past plan.exitTaper the stroke thins toward plan.taperFloor
+        // — a lift, not a starve; it deliberately stops at half. The no-dot clamp
+        // sits under it as a safety net (ink is never wider than a third of the
+        // length it has left), which only bites once the fade has the ink near
+        // transparent anyway.
         final w = math.min(
-          StrokeTaper.out(prog, plan.exitTaper),
+          StrokeTaper.out(prog, plan.exitTaper, plan.taperFloor),
           StrokeTaper.lengthClamp(c.length * visible, c.length, strokeWidth),
         );
-        final p = StrokeTaper.weighted(paint, w);
-        if (p == null) return; // ink spent — draw nothing (width 0 = hairline!)
+        // ── Alpha: the dissolve over the END of the exit is what actually
+        // removes the ink, so the last visible frame is transparent rather than
+        // a hard cut at whatever width it happened to have.
+        final p = StrokeTaper.weighted(paint, w,
+            alpha: StrokeTaper.fade(prog, plan.exitFade));
+        if (p == null) return; // gone — draw nothing (width 0 = hairline!)
         canvas.drawPath(PathMorph.trimmedRange(c, 0, visible), p);
       case MorphExit.fade:
         canvas.drawPath(c.polygon, tintStroke(paint, 1 - prog));
@@ -637,7 +639,7 @@ class IconicMorphPainter extends CustomPainter {
           // knob says. This is the exit's mirror: weight in, weight out.
           final c = flips[i];
           final w = math.min(
-            StrokeTaper.into(local, plan.assembleTaper),
+            StrokeTaper.into(local, plan.assembleTaper, plan.taperFloor),
             StrokeTaper.lengthClamp(c.length * e, c.length, strokeWidth),
           );
           final p = StrokeTaper.weighted(paint, w);

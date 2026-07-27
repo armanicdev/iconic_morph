@@ -20,34 +20,65 @@ Paint _base({double width = kIconStrokeWidth}) => Paint()
 
 void main() {
   group('StrokeTaper.out (the pen lift)', () {
-    test('holds full weight until the taper point, then falls to nothing', () {
+    test('holds full weight until the taper point, then eases to the floor', () {
       expect(StrokeTaper.out(0, 0.5), 1);
       expect(StrokeTaper.out(0.5, 0.5), 1); // still full AT the taper point
       expect(StrokeTaper.out(0.75, 0.5), lessThan(1));
-      expect(StrokeTaper.out(0.75, 0.5), greaterThan(0));
-      expect(StrokeTaper.out(1, 0.5), closeTo(0, 1e-9)); // gone when length is
+      expect(StrokeTaper.out(0.75, 0.5), greaterThan(StrokeTaper.kFloor));
+      // Stops at the floor — it thins, it does NOT starve to nothing. Removing
+      // the ink is StrokeTaper.fade's job.
+      expect(StrokeTaper.out(1, 0.5), closeTo(StrokeTaper.kFloor, 1e-9));
     });
 
-    test('never rises — weight only ever runs out', () {
+    test('never rises, and never goes under the floor', () {
       var prev = 1.0;
       for (var i = 0; i <= 100; i++) {
         final w = StrokeTaper.out(i / 100, 0.5);
         expect(w, lessThanOrEqualTo(prev + 1e-12));
+        expect(w, greaterThanOrEqualTo(StrokeTaper.kFloor - 1e-12));
         prev = w;
       }
     });
 
-    test('start >= 1 disables the taper (pre-1.1 constant weight)', () {
+    test('the floor is a parameter — 1 keeps constant weight, 0 thins away', () {
+      expect(StrokeTaper.out(1, 0.5, 1), 1);
+      expect(StrokeTaper.out(1, 0.5, 0), closeTo(0, 1e-9));
+    });
+
+    test('start >= 1 disables the taper (constant weight)', () {
       for (var i = 0; i <= 10; i++) {
         expect(StrokeTaper.out(i / 10, 1), 1);
       }
     });
   });
 
+  group('StrokeTaper.fade (the dissolve that actually removes it)', () {
+    test('opaque until the fade point, then out to nothing by the end', () {
+      expect(StrokeTaper.fade(0, 0.75), 1);
+      expect(StrokeTaper.fade(0.75, 0.75), 1); // still opaque AT the fade point
+      expect(StrokeTaper.fade(0.875, 0.75), lessThan(1));
+      expect(StrokeTaper.fade(0.875, 0.75), greaterThan(0));
+      expect(StrokeTaper.fade(1, 0.75), closeTo(0, 1e-9));
+    });
+
+    test('never rises', () {
+      var prev = 1.0;
+      for (var i = 0; i <= 100; i++) {
+        final a = StrokeTaper.fade(i / 100, 0.75);
+        expect(a, lessThanOrEqualTo(prev + 1e-12));
+        prev = a;
+      }
+    });
+
+    test('start >= 1 disables the fade (removal by length alone)', () {
+      expect(StrokeTaper.fade(1, 1), 1);
+    });
+  });
+
   group('StrokeTaper.into (the nib pressing down)', () {
-    test('starts at nothing and reaches full weight by the ramp end', () {
-      expect(StrokeTaper.into(0, 0.2), 0);
-      expect(StrokeTaper.into(0.1, 0.2), greaterThan(0));
+    test('starts at the floor and reaches full weight by the ramp end', () {
+      expect(StrokeTaper.into(0, 0.2), StrokeTaper.kFloor);
+      expect(StrokeTaper.into(0.1, 0.2), greaterThan(StrokeTaper.kFloor));
       expect(StrokeTaper.into(0.1, 0.2), lessThan(1));
       expect(StrokeTaper.into(0.2, 0.2), 1);
       expect(StrokeTaper.into(1, 0.2), 1); // and holds it for the whole draw
@@ -98,6 +129,23 @@ void main() {
       expect(StrokeTaper.weighted(_base(), 1e-4), isNull);
     });
 
+    test('fully faded returns null too, at any weight', () {
+      expect(StrokeTaper.weighted(_base(), 1, alpha: 0), isNull);
+      expect(StrokeTaper.weighted(_base(), 0.5, alpha: 0), isNull);
+    });
+
+    test('a fade at full weight keeps the width and only drops alpha', () {
+      final p = StrokeTaper.weighted(_base(), 1, alpha: 0.4)!;
+      expect(p.strokeWidth, closeTo(kIconStrokeWidth, 1e-6));
+      expect(p.color.a, closeTo(0.4, 0.01));
+    });
+
+    test('weight and fade compound — a thinned, dissolving stroke', () {
+      final p = StrokeTaper.weighted(_base(), 0.5, alpha: 0.5)!;
+      expect(p.strokeWidth, closeTo(1, 1e-6));
+      expect(p.color.a, closeTo(0.5, 0.01));
+    });
+
     test('a returned paint always has a real, renderable width', () {
       // (Paint stores stroke width as a float32, so read-back is compared with a
       // single-precision tolerance, not exactly.)
@@ -130,10 +178,12 @@ void main() {
   });
 
   group('IconMorphPlan taper knobs', () {
-    test('defaults taper the exit at the halfway point and ramp the entrance',
-        () {
+    test('defaults: thin from half-way, to half weight, dissolve over the last '
+        'quarter', () {
       const plan = IconMorphPlan();
       expect(plan.exitTaper, 0.5);
+      expect(plan.taperFloor, 0.5);
+      expect(plan.exitFade, 0.75);
       expect(plan.assembleTaper, 0.18);
     });
 
@@ -141,8 +191,12 @@ void main() {
       const plan = IconMorphPlan();
       expect(plan.copyWith(exitTaper: 0.5), plan);
       expect(plan.copyWith(exitTaper: 0.8), isNot(plan));
+      expect(plan.copyWith(exitFade: 0.6), isNot(plan));
+      expect(plan.copyWith(taperFloor: 0.7), isNot(plan));
       expect(plan.copyWith(assembleTaper: 0.4), isNot(plan));
       expect(plan.copyWith(exitTaper: 0.8).hashCode, isNot(plan.hashCode));
+      expect(plan.copyWith(exitFade: 0.6).hashCode, isNot(plan.hashCode));
+      expect(plan.copyWith(taperFloor: 0.7).hashCode, isNot(plan.hashCode));
       expect(plan.copyWith(assembleTaper: 0.4).hashCode, isNot(plan.hashCode));
       // The field list is past Object.hash's 20-argument ceiling; hashAll must
       // still separate a change in the LAST field.

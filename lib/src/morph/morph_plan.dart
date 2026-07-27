@@ -29,11 +29,11 @@ enum MorphAssemble {
 enum MorphExit {
   /// Leaving pieces **un-draw**: each retracts along its own length from its open
   /// end (trim-path reversed), the pen lifting and pulling the ink back — the
-  /// temporal mirror of the target's [MorphAssemble.trim] draw-on. A true erase,
-  /// not an alpha fade: the ink keeps its colour and loses its LENGTH, and over
-  /// the last of the exit ([IconMorphPlan.exitTaper]) its WEIGHT as well, so the
-  /// stroke runs out to nothing instead of collapsing into a round-cap dot. This
-  /// is the default.
+  /// temporal mirror of the target's [MorphAssemble.trim] draw-on. Not the
+  /// [fade] dissolve: the ink stays itself and loses its LENGTH, thinning a
+  /// little past [IconMorphPlan.exitTaper] and dissolving only over the last of
+  /// the exit ([IconMorphPlan.exitFade]) — so the stroke lifts away instead of
+  /// collapsing into a round-cap dot. This is the default.
   trim,
 
   /// Leaving pieces **fade** their alpha to 0 — the original behavior, kept as an
@@ -85,6 +85,8 @@ class IconMorphPlan {
     this.flipStart = 0.55,
     this.flipStagger = 0.1,
     this.exitTaper = 0.5,
+    this.exitFade = 0.75,
+    this.taperFloor = 0.5,
     this.assembleTaper = 0.18,
     this.perspective = 0.0028,
     this.assemble = MorphAssemble.trim,
@@ -169,21 +171,35 @@ class IconMorphPlan {
   final double flipStagger;
 
   /// **Pen-lift taper** (0..1) — the point in a leaving contour's exit after which
-  /// its STROKE WEIGHT also tapers to zero, so the un-draw ([MorphExit.trim])
-  /// runs the ink out instead of ending on a dot.
+  /// its STROKE WEIGHT starts easing down toward [taperFloor].
   ///
   /// A trim that animates length alone cannot vanish cleanly: a round-capped
   /// stroke shorter than its own width IS a dot, so the last stretch of every
   /// retract used to park a fixed-size dot on screen and then blink it away.
-  /// Default 0.5 — full weight for the first half of the exit (the retract still
-  /// reads as a real line being pulled back), thinning to nothing across the
-  /// second half, landing on 0 exactly as the length does. 1 = no taper (constant
-  /// weight); the engine's `StrokeTaper` no-dot clamp still prevents a dot.
+  /// Default 0.5 — full weight for the first half of the exit (the retract reads
+  /// as a real line being pulled back), thinning across the second half. It stops
+  /// at [taperFloor]; [exitFade] is what removes it. 1 = no taper.
   final double exitTaper;
 
+  /// **Dissolve start** (0..1) — the point in a leaving contour's exit where its
+  /// ALPHA starts fading out, reaching zero at the end of the exit.
+  ///
+  /// Default 0.75: the ink thins a little, then dissolves over the last quarter.
+  /// This is what actually removes the stroke — thinning alone all the way to
+  /// zero reads as a line starving rather than a pen lifting. 1 = no fade (the
+  /// ink is removed only by its length running out).
+  final double exitFade;
+
+  /// **Ink floor** (0..1) — how thin a taper is ever allowed to take the stroke,
+  /// at either end. Default 0.5: ink thins to half weight and no further.
+  ///
+  /// Applies to both [exitTaper] (thinning out) and [assembleTaper] (pressing
+  /// in). 1 = never thin at all; 0 = thin all the way to nothing.
+  final double taperFloor;
+
   /// **Nib press-down** (0..1) — the fraction of an arriving contour's draw-on
-  /// ([MorphAssemble.trim]) over which its stroke weight ramps from nothing up to
-  /// full, the mirror of [exitTaper].
+  /// ([MorphAssemble.trim]) over which its stroke weight ramps from [taperFloor]
+  /// up to full, the mirror of [exitTaper].
   ///
   /// Without it a draw-on stamps a full-weight round-cap dot on its first frame
   /// and grows out of it. Default 0.18 — the piece is at full weight after the
@@ -243,6 +259,8 @@ class IconMorphPlan {
     double? flipStart,
     double? flipStagger,
     double? exitTaper,
+    double? exitFade,
+    double? taperFloor,
     double? assembleTaper,
     double? perspective,
     MorphAssemble? assemble,
@@ -267,6 +285,8 @@ class IconMorphPlan {
         flipStart: flipStart ?? this.flipStart,
         flipStagger: flipStagger ?? this.flipStagger,
         exitTaper: exitTaper ?? this.exitTaper,
+        exitFade: exitFade ?? this.exitFade,
+        taperFloor: taperFloor ?? this.taperFloor,
         assembleTaper: assembleTaper ?? this.assembleTaper,
         perspective: perspective ?? this.perspective,
         assemble: assemble ?? this.assemble,
@@ -298,6 +318,8 @@ class IconMorphPlan {
           other.flipStart == flipStart &&
           other.flipStagger == flipStagger &&
           other.exitTaper == exitTaper &&
+          other.exitFade == exitFade &&
+          other.taperFloor == taperFloor &&
           other.assembleTaper == assembleTaper &&
           other.perspective == perspective &&
           other.assemble == assemble &&
@@ -326,6 +348,8 @@ class IconMorphPlan {
         flipStart,
         flipStagger,
         exitTaper,
+        exitFade,
+        taperFloor,
         assembleTaper,
         perspective,
         assemble,

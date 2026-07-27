@@ -76,18 +76,21 @@ Compose them with `IconSequence([IconStep(...), …])`. Drive playback with an
 All effects honour the OS reduce-motion setting (`IconMotion.reduced`) by
 snapping to their end state.
 
-## Ink that runs out (trim-path weight)
+## Ink that lifts away (trim-path weight)
 
 A trim-path that animates *length* alone cannot vanish cleanly — a round-capped
 stroke shorter than its own width **is** a dot, so an un-draw ends on one and a
 draw-on starts by stamping one. `StrokeTaper` fixes that by weighting ink to the
-length it has: a retract thins to nothing as it shortens, and a draw-on presses
-the nib down as it starts. It is on by default and tunable per morph:
+length it has: a retract thins as it shortens (to half, not to nothing — a stroke
+that keeps thinning reads as starving) and then **dissolves** over the end, while
+a draw-on presses the nib down as it starts. On by default, tunable per morph:
 
 ```dart
 IconicMorph(MorphIcons.user, MorphIcons.face,
   plan: const IconMorphPlan(
-    exitTaper: 0.5,      // weight starts running out at half the exit (1 = off)
+    exitTaper: 0.5,      // weight starts easing down at half the exit (1 = off)
+    taperFloor: 0.5,     // and never thins past half (1 = never thin)
+    exitFade: 0.75,      // the dissolve runs over the last quarter (1 = off)
     assembleTaper: 0.18, // full weight by a fifth of the draw-on (0 = off)
   ));
 ```

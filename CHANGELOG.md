@@ -1,5 +1,32 @@
 # Changelog
 
+## 1.2.0
+
+**The lift is a thin-then-dissolve, not a thin-to-nothing.** 1.1.0 removed the
+terminal dot by tapering ink to zero width, but a stroke that keeps thinning
+reads as starving rather than as a pen lifting — and it still ends on a hard cut
+at whatever width the last visible frame had. The taper now stops at half weight
+and an alpha dissolve over the end of the exit does the removing.
+
+### Added
+- **`StrokeTaper.fade(prog, start)`** — the dissolve: alpha 1 → 0 over the end of
+  a trim-out.
+- **`StrokeTaper.kFloor`** (0.5) and a `floor` parameter on `out` / `into`.
+- **`IconMorphPlan.exitFade`** (default `0.75`) — where the dissolve starts.
+  `1` disables it (removal by length alone).
+- **`IconMorphPlan.taperFloor`** (default `0.5`) — how thin a taper may ever take
+  the stroke, at either end. `1` = never thin.
+- `StrokeTaper.weighted` takes an `alpha:` argument and returns `null` once
+  fully faded, so a dissolved stroke skips its draw entirely.
+
+### Changed
+- `StrokeTaper.out` now eases to `floor` instead of to 0; `StrokeTaper.into`
+  ramps *from* `floor` instead of from 0.
+- `MorphExit.trim`'s length now tracks its (already smoothstepped) window
+  progress directly. Both front-loaded curves tried on top of it — 1.0.x's
+  `easeOutCubic` and 1.1.0's `easeOutQuad` — turned the ink into a stub while it
+  was still fully opaque, which is the very thing that reads as a dot.
+
 ## 1.1.0
 
 **The ink now runs out.** A trim-path that animates length alone cannot vanish
