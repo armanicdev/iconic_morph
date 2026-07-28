@@ -86,6 +86,7 @@ class IconMorphPlan {
     this.flipStagger = 0.1,
     this.exitTaper = 0.5,
     this.exitFade = 0.75,
+    this.assembleFade = 0.35,
     this.taperFloor = 1,
     this.assembleTaper = 0.18,
     this.perspective = 0.0028,
@@ -202,6 +203,16 @@ class IconMorphPlan {
   /// glyph — see [taperFloor]. 1 = no fade (a hard cut when the length runs out).
   final double exitFade;
 
+  /// **Emergence span** (0..1) — the share of an arriving contour's own draw
+  /// over which its ALPHA ramps from nothing to full. The mirror of [exitFade].
+  ///
+  /// Default 0.35 ≈ 100 ms at the default [duration]. Without it a drawing-on
+  /// piece is fully opaque from its first pixel: the ink pops into existence and
+  /// only then draws, which reads as a hard edge exactly the way an unfaded
+  /// exit does. It finishes at a third of the draw, so the piece is at full
+  /// strength long before the trim reaches the end. 0 = no fade in.
+  final double assembleFade;
+
   /// **Ink floor** (0..1) — how thin a taper may ever take the stroke, at either
   /// end. **Default 1: stroke weight is never touched.**
   ///
@@ -270,6 +281,7 @@ class IconMorphPlan {
     double? flipStagger,
     double? exitTaper,
     double? exitFade,
+    double? assembleFade,
     double? taperFloor,
     double? assembleTaper,
     double? perspective,
@@ -296,6 +308,7 @@ class IconMorphPlan {
         flipStagger: flipStagger ?? this.flipStagger,
         exitTaper: exitTaper ?? this.exitTaper,
         exitFade: exitFade ?? this.exitFade,
+        assembleFade: assembleFade ?? this.assembleFade,
         taperFloor: taperFloor ?? this.taperFloor,
         assembleTaper: assembleTaper ?? this.assembleTaper,
         perspective: perspective ?? this.perspective,
@@ -329,6 +342,7 @@ class IconMorphPlan {
           other.flipStagger == flipStagger &&
           other.exitTaper == exitTaper &&
           other.exitFade == exitFade &&
+          other.assembleFade == assembleFade &&
           other.taperFloor == taperFloor &&
           other.assembleTaper == assembleTaper &&
           other.perspective == perspective &&
@@ -359,6 +373,7 @@ class IconMorphPlan {
         flipStagger,
         exitTaper,
         exitFade,
+        assembleFade,
         taperFloor,
         assembleTaper,
         perspective,

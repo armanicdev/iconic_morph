@@ -150,6 +150,40 @@ void main() {
     });
   });
 
+  group('StrokeTaper.emerge (the fade IN — a trim has two ends)', () {
+    test('starts at nothing and is settled well before the trim ends', () {
+      expect(StrokeTaper.emerge(0, 0.35), 0);
+      expect(StrokeTaper.emerge(0.1, 0.35), greaterThan(0));
+      expect(StrokeTaper.emerge(0.1, 0.35), lessThan(1));
+      expect(StrokeTaper.emerge(0.175, 0.35), closeTo(0.5, 0.02));
+      expect(StrokeTaper.emerge(0.35, 0.35), 1); // done at a third of the draw
+      expect(StrokeTaper.emerge(1, 0.35), 1);
+    });
+
+    test('never falls', () {
+      var prev = 0.0;
+      for (var i = 0; i <= 200; i++) {
+        final a = StrokeTaper.emerge(i / 200, 0.35);
+        expect(a, greaterThanOrEqualTo(prev - 1e-12));
+        prev = a;
+      }
+    });
+
+    test('span 0 disables it (opaque from the first pixel)', () {
+      expect(StrokeTaper.emerge(0, 0), 1);
+    });
+
+    test('both ends of a morph now fade, and both in real time', () {
+      const plan = IconMorphPlan();
+      final ms = plan.duration.inMilliseconds;
+      // Exit: a quarter of the timeline. Entrance: a third of the assemble
+      // window, which is (1 - flipStart) of the timeline.
+      expect(ms * (1 - plan.exitFade), greaterThanOrEqualTo(120));
+      expect(ms * (1 - plan.flipStart) * plan.assembleFade,
+          greaterThanOrEqualTo(80));
+    });
+  });
+
   group('StrokeTaper.exitAlpha (the dissolve, anchored to geometry)', () {
     // The exit's visible length tracks (1 - prog), so a 30-unit contour with a
     // 2-unit stroke is dot-shaped (< 2 stroke-widths = 4 units) from prog 0.867.

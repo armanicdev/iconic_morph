@@ -83,10 +83,15 @@ stroke shorter than its own width **is** a dot, so an un-draw ends on a
 fixed-size dot and then blinks out. The fix is an **alpha dissolve**: the ink
 retracts at its true weight, then fades. A transparent dot is simply not there.
 
+A trim has **two** ends and both fade: a draw-on that arrives at full opacity on
+its first frame pops into existence and only then draws, which is the same hard
+edge in reverse.
+
 ```dart
 IconicMorph(MorphIcons.user, MorphIcons.face,
   plan: const IconMorphPlan(
-    exitFade: 0.75,  // the dissolve spans the last quarter of the exit (1 = off)
+    exitFade: 0.75,     // dissolve spans the last quarter of the timeline (1 = off)
+    assembleFade: 0.35, // fade in over the first third of each draw (0 = off)
   ));
 ```
 

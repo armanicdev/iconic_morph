@@ -1,5 +1,31 @@
 # Changelog
 
+## 1.6.0
+
+**A trim has two ends, and now both of them fade.** Every release up to here
+only ever faded the trim-OUT. A trim-IN still arrived at full opacity on its
+first frame — the ink popped into existence and *then* drew — which reads as
+exactly the same hard edge, and a conspicuous one, because a round-capped stroke
+shorter than its own width is a dot. The fade is now symmetric, and applied at
+every trim end in the engine rather than only in the morph's exit.
+
+### Added
+- **`StrokeTaper.emerge(local, span)`** — the fade in, mirror of `dissolve`.
+- **`IconMorphPlan.assembleFade`** (default `0.35`) — the share of an arriving
+  contour's own draw spent fading in. ≈100 ms at the default duration, settled
+  at a third of the draw. `0` disables it.
+- **`IconTrimDraw.fade`** (default `StrokeTaper.kEndFade`, `0.35`) — fades the
+  ink in as the pen starts, or out as a `reversed` erase finishes.
+- `StrokeTaper.kEndFade` — the shared default share.
+
+### Changed
+- `MorphAssemble.trim` fades in (`icon_morph.dart` previously passed no alpha at
+  all on that path).
+- `IconDetailSpin`'s accent fades out as its drain empties and back in as the
+  redraw starts, instead of blinking off and on at full opacity.
+- Both spans are fractions of quantities that are LINEAR in time, so they are
+  real durations — the 1.5.0 lesson applied to the entrance.
+
 ## 1.5.0
 
 **The dissolve is measured in real time, and now actually lasts.** 1.4.0 put the

@@ -155,6 +155,24 @@ abstract final class StrokeTaper {
     return 1 - Curves.easeInOut.transform((t - start) / span);
   }
 
+  /// Default share of a trim's own window spent fading its end in or out.
+  /// A third is enough to read as a fade and still finish long before the trim
+  /// itself does — which is the point: **the alpha must be settled before the
+  /// length is**, or the stroke arrives (or leaves) with a visible edge.
+  static const double kEndFade = 0.35;
+
+  /// **The emergence.** Alpha factor (0 → 1) for a trim that is DRAWING ON, at
+  /// its own draw progress [local], ramping over the first [span] of it.
+  ///
+  /// The mirror of [dissolve], and just as load-bearing: without it a draw-on
+  /// arrives at full opacity from its very first pixel, so the ink pops into
+  /// existence and *then* draws. [span] must be a fraction of a quantity that is
+  /// LINEAR in time — a trim's window progress is, its eased length is not.
+  static double emerge(double local, double span) {
+    if (span <= 0) return 1;
+    return Curves.easeInOut.transform((local / span).clamp(0.0, 1.0));
+  }
+
   /// **The exit dissolve in PROGRESS space** — alpha for a contour of
   /// [fullLength] at exit progress [prog].
   ///

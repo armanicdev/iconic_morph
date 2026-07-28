@@ -671,7 +671,12 @@ class IconicMorphPainter extends CustomPainter {
             fullLength: c.length,
             strokeWidth: strokeWidth,
           );
-          final p = StrokeTaper.weighted(paint, w);
+          // Alpha: the mirror of the exit's dissolve. Without it the piece
+          // arrives at full opacity on its first frame — the ink pops into
+          // existence and only then draws. [local] is linear in time here (the
+          // eased length is not), so a share of it is a real duration.
+          final p = StrokeTaper.weighted(paint, w,
+              alpha: StrokeTaper.emerge(local, plan.assembleFade));
           if (p != null) canvas.drawPath(PathMorph.trimmedContour(c, e), p);
         case MorphAssemble.flip3d:
           final angle = Projector3D.kEdgeOnEntryAngle * (1 - e); // edge-on → flat

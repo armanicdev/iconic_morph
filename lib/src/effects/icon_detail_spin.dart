@@ -8,6 +8,7 @@ import '../motion.dart';
 import '../icon_geometry.dart';
 import '../icon_effect.dart';
 import '../projection_3d.dart';
+import '../stroke_taper.dart';
 
 /// A "knock" press animation composed per-contour on one timeline:
 ///  1. the icon's small **accent** detail trims OUT (e.g. a home-screen smile),
@@ -89,10 +90,18 @@ class IconDetailSpin extends IconEffect {
     // beginning at the start reads as a continuation, not a reversal. ───────────
     final accentPath = Path();
     var hasAccent = false;
+    // Alpha for whichever end of the accent's trim is happening: it fades out as
+    // the drain empties and back in as the redraw starts, instead of blinking
+    // off and on at full opacity. Both are settled before the trim reaches its
+    // other end. (Per-contour ALPHA, not weight — the accent keeps the body's
+    // stroke thickness throughout; see StrokeTaper.kFloor.)
+    var accentAlpha = 1.0;
     if (t <= _outEnd) {
       // Ease-OUT attack: the drain starts the instant the finger lands (the
       // responsive tick), then softens — an ease-in here reads as input lag.
-      final g = Curves.easeOutCubic.transform(t / _outEnd); // drain 0 → 1
+      final local = t / _outEnd; // linear in time — the eased g is not
+      final g = Curves.easeOutCubic.transform(local); // drain 0 → 1
+      accentAlpha = StrokeTaper.emerge(1 - local, StrokeTaper.kEndFade);
       if (g < 1) {
         for (final i in accent) {
           if (i < 0 || i >= geom.contours.length) continue;
@@ -107,8 +116,9 @@ class IconDetailSpin extends IconEffect {
         }
       }
     } else if (t >= _inStart) {
-      final f =
-          Curves.easeOutCubic.transform((t - _inStart) / (1 - _inStart)); // 0→1
+      final local = (t - _inStart) / (1 - _inStart);
+      final f = Curves.easeOutCubic.transform(local); // 0→1
+      accentAlpha = StrokeTaper.emerge(local, StrokeTaper.kEndFade);
       if (f > 0) {
         for (final i in accent) {
           if (i < 0 || i >= geom.contours.length) continue;
@@ -120,7 +130,9 @@ class IconDetailSpin extends IconEffect {
         }
       }
     }
-    if (hasAccent) canvas.drawPath(accentPath, paint);
+    if (!hasAccent) return;
+    final accentPaint = StrokeTaper.weighted(paint, 1, alpha: accentAlpha);
+    if (accentPaint != null) canvas.drawPath(accentPath, accentPaint);
   }
 
   static int _shortestContour(IconGeometry geom) {
