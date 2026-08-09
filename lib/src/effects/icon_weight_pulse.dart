@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
 
+import '../easing.dart';
 import '../motion.dart';
 
 import '../icon_geometry.dart';
@@ -68,7 +69,7 @@ class IconWeightPulse extends IconEffect {
     // monotonic eased ramp gives the in/out swell. One-shot: a half-sine does
     // the up-and-back on a single forward pass.
     final pulse = (loops && autoReverse)
-        ? Curves.easeInOut.transform(tt)
+        ? IconicEase.glide.transform(tt)
         : math.sin(math.pi * tt);
 
     // Modulate the SHARED base paint's width in place (restored below) rather than

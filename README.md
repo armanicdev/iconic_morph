@@ -112,12 +112,15 @@ bespoke rest states), build a `ShapeMorphGeometry` per transition and drive a
 
 ## Easing by feel
 
-Both morphs take their velocity profile from `IconicEase` — three curated
-profiles, named by feel, and every knob accepts any `Curve` of your own:
+The whole engine takes its velocity profiles from `IconicEase` — four curated
+profiles, named by feel, and every knob accepts any `Curve` of your own. As of
+1.9.0 the vocabulary is total: every effect default speaks one of these names,
+so nothing in the library moves on an unnamed curve.
 
 | Profile | What it is | Feels like |
 | --- | --- | --- |
 | `IconicEase.glide` | symmetric ease-in-out | calm — a passive change nobody triggered |
+| `IconicEase.arrive` | deceleration-only ease-out | triggered detail — already moving at frame one, all settle |
 | `IconicEase.flight` | fast-launch ease-out | the worm's signature — leaves decisively, lands gently |
 | `IconicEase.snap` | critically-damped spring | platform-native — responds on the first frame, settles on an exponential tail |
 

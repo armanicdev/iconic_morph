@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import '../easing.dart';
 import '../motion.dart';
 
 import '../icon_geometry.dart';
@@ -17,7 +18,7 @@ import '../icon_effect.dart';
 class IconConverge extends IconEffect {
   const IconConverge({
     this.duration = IconMotion.iconConverge,
-    this.curve = Curves.easeOutCubic,
+    this.curve = IconicEase.arrive,
     this.spread = 3.2,
     this.stagger = 0.12,
   });

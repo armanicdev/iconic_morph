@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
 
+import '../easing.dart';
 import '../motion.dart';
 
 import '../icon_geometry.dart';
@@ -48,7 +49,7 @@ class IconLockEngage extends IconEffect {
   @override
   void paint(Canvas canvas, Size size, IconGeometry geom, double t, Paint paint) {
     final tt = t.clamp(0.0, 1.0);
-    final e = Curves.easeOutCubic.transform(tt);
+    final e = IconicEase.arrive.transform(tt);
     final decay = (1 - tt) * (1 - tt); // strong at the strike, gone by the end
 
     // Grow pulse: up past 1 mid-strike then settle to 1 — a physical clunk.

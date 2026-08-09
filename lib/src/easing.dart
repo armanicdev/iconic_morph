@@ -15,6 +15,14 @@ abstract final class IconicEase {
   /// re-arranging itself, a passive state change nobody triggered).
   static const Curve glide = Curves.easeInOutCubic;
 
+  /// Deceleration-only ease-out — already moving at frame one, all settle.
+  /// The workhorse of TRIGGERED single-shot detail: an ornament sliding home,
+  /// a drained stroke fading back, a lid closing. Calmer than [flight] (which
+  /// launches harder and coasts longer) and busier than [glide] (which spends
+  /// half its clock accelerating). Every effect default that decelerates rides
+  /// this name, so a re-tune is one edit here rather than a hunt.
+  static const Curve arrive = Curves.easeOutCubic;
+
   /// Fast-launch ease-out — peak velocity at the first frame, decelerating
   /// into a long, soft settle. The worm morph's signature clock ([IconMorphPlan.curve]
   /// defaults to it): a line LEAVING somewhere should leave decisively and

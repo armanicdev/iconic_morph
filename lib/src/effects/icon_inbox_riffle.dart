@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import '../easing.dart';
 import '../motion.dart';
 
 import '../icon_geometry.dart';
@@ -118,11 +119,11 @@ class IconInboxRiffle extends IconEffect {
       // Ease-OUT on the deal-out: the sheet moves the instant the finger lands
       // (responsive), then decelerates — ease-in here reads as input lag.
       if (e <= backOutEnd) {
-        final o = Curves.easeOutCubic.transform((e / backOutEnd).clamp(0.0, 1.0));
+        final o = IconicEase.arrive.transform((e / backOutEnd).clamp(0.0, 1.0));
         return (drop * o, 1 - o);
       }
       if (e >= backInStart) {
-        final o = Curves.easeOutCubic
+        final o = IconicEase.arrive
             .transform(((e - backInStart) / (1 - backInStart)).clamp(0.0, 1.0));
         return (-rise * (1 - o), o); // starts low, rises into its slot
       }
@@ -132,12 +133,12 @@ class IconInboxRiffle extends IconEffect {
     // FRONT (and any sheet between back and tray): deal out, then straight back.
     if (e <= frontOutStart) return (0, 1); // still settled
     if (e <= frontOutEnd) {
-      final o = Curves.easeOutCubic.transform(
+      final o = IconicEase.arrive.transform(
           ((e - frontOutStart) / (frontOutEnd - frontOutStart)).clamp(0.0, 1.0));
       return (drop * o, 1 - o);
     }
     if (e <= frontInEnd) {
-      final o = Curves.easeOutCubic
+      final o = IconicEase.arrive
           .transform(((e - frontOutEnd) / (frontInEnd - frontOutEnd)).clamp(0.0, 1.0));
       return (-rise * (1 - o), o);
     }

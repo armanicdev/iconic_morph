@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/widgets.dart';
 import '../math/mat4.dart' as vm;
 
+import '../easing.dart';
 import '../motion.dart';
 
 import '../icon_geometry.dart';
@@ -29,7 +30,7 @@ import '../projection_3d.dart';
 class IconSpin3D extends IconEffect {
   const IconSpin3D({
     this.duration = IconMotion.iconSpin,
-    this.curve = Curves.easeInOutCubic,
+    this.curve = IconicEase.glide,
     this.fromAngle = 0,
     this.toAngle = 2 * math.pi,
     this.axis = Spin3DAxis.vertical,
@@ -49,7 +50,7 @@ class IconSpin3D extends IconEffect {
     double perspective = 0.0026,
   }) : this(
           duration: duration,
-          curve: Curves.easeInOutCubic,
+          curve: IconicEase.glide,
           fromAngle: 0,
           toAngle: 2 * math.pi,
           perspective: perspective,

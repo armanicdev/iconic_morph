@@ -1,5 +1,28 @@
 # Changelog
 
+## 1.9.0
+
+**The easing vocabulary is total — nothing moves on an unnamed curve.**
+
+### Added
+
+- `IconicEase.arrive` — deceleration-only ease-out (`Curves.easeOutCubic` as a
+  named profile): the workhorse of triggered single-shot detail. Every effect
+  default that decelerates now rides this name, so re-tuning the whole
+  library's "settle" feel is one edit instead of a hunt.
+
+### Changed
+
+- Every effect default and internal profile now speaks `IconicEase`:
+  trim-draw and spin-3D ride `glide`, converge / lock-engage / inbox-riffle /
+  detail-spin ride `arrive` (all byte-identical to the curves they replace —
+  zero visual change), and the detail spin keeps its deliberate
+  `easeInOutCubicEmphasized` turn.
+- Trace and weight-pulse step up from `easeInOut` to `glide`
+  (`easeInOutCubic`) — the same symmetric shape with a slightly more confident
+  middle, matching the rest of the vocabulary. The one intentional (and
+  subtle) visual refinement in this release.
+
 ## 1.8.1
 
 **Developer-freedom pass — no widget locks you to the engine's defaults.**

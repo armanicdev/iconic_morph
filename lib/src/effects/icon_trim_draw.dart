@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import '../easing.dart';
 import '../motion.dart';
 
 import '../icon_geometry.dart';
@@ -23,7 +24,7 @@ import '../stroke_taper.dart';
 class IconTrimDraw extends IconEffect {
   const IconTrimDraw({
     this.duration = IconMotion.iconDraw,
-    this.curve = Curves.easeInOutCubic,
+    this.curve = IconicEase.glide,
     this.continuous = true,
     this.reversed = false,
     this.loops = false,

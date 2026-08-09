@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
 
+import '../easing.dart';
 import '../motion.dart';
 
 import '../icon_geometry.dart';
@@ -28,7 +29,7 @@ import '../icon_effect.dart';
 class IconTrace extends IconEffect {
   const IconTrace({
     this.duration = IconMotion.iconTrace,
-    this.curve = Curves.easeInOut,
+    this.curve = IconicEase.glide,
     this.tailFraction = 0.34,
     this.intensity = 0.95,
     this.loops = false,
@@ -42,7 +43,7 @@ class IconTrace extends IconEffect {
     double intensity = 0.8,
   }) : this(
           duration: duration,
-          curve: Curves.easeInOut,
+          curve: IconicEase.glide,
           tailFraction: tailFraction,
           intensity: intensity,
           loops: true,

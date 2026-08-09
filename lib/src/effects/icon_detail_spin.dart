@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/widgets.dart';
 import '../math/mat4.dart' as vm;
 
+import '../easing.dart';
 import '../motion.dart';
 
 import '../icon_geometry.dart';
@@ -100,7 +101,7 @@ class IconDetailSpin extends IconEffect {
       // Ease-OUT attack: the drain starts the instant the finger lands (the
       // responsive tick), then softens — an ease-in here reads as input lag.
       final local = t / _outEnd; // linear in time — the eased g is not
-      final g = Curves.easeOutCubic.transform(local); // drain 0 → 1
+      final g = IconicEase.arrive.transform(local); // drain 0 → 1
       accentAlpha = StrokeTaper.emerge(1 - local, StrokeTaper.kEndFade);
       if (g < 1) {
         for (final i in accent) {
@@ -117,7 +118,7 @@ class IconDetailSpin extends IconEffect {
       }
     } else if (t >= _inStart) {
       final local = (t - _inStart) / (1 - _inStart);
-      final f = Curves.easeOutCubic.transform(local); // 0→1
+      final f = IconicEase.arrive.transform(local); // 0→1
       accentAlpha = StrokeTaper.emerge(local, StrokeTaper.kEndFade);
       if (f > 0) {
         for (final i in accent) {
