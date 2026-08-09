@@ -36,6 +36,7 @@ class IconicMorph extends StatefulWidget {
     this.reverse = false,
     this.timeScale = 1,
     this.scrub,
+    this.strokeWidth = kIconStrokeWidth,
     this.semanticLabel,
     this.debugTangents = false,
     this.motionBlur = false,
@@ -76,6 +77,10 @@ class IconicMorph extends StatefulWidget {
   /// Scrub override (0..1). When non-null the morph holds this exact frame
   /// instead of playing — drives a draggable timeline. Disables autoplay.
   final double? scrub;
+
+  /// Stroke weight in viewBox units (default [kIconStrokeWidth] = 2 at a 24
+  /// box). Match it to your own icon system's line weight.
+  final double strokeWidth;
 
   final String? semanticLabel;
 
@@ -262,6 +267,7 @@ class _IconicMorphState extends State<IconicMorph>
                 plan: widget.plan,
                 color: color,
                 reverse: widget.reverse,
+                strokeWidth: widget.strokeWidth,
                 debugTangents: widget.debugTangents,
                 motionBlur: widget.motionBlur,
                 progress: widget.scrub != null

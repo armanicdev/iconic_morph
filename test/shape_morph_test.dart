@@ -114,6 +114,50 @@ void main() {
       }
     });
 
+    testWidgets(
+        'a BUSY icon (many unpaired contours) still paints — the stagger '
+        'cascade must never overflow its window', (tester) async {
+      // 16 exiting bars against 1 arriving line: (n-1)·stagger would exceed 1
+      // un-normalized, making the per-contour window width negative.
+      final busy = IconGeometry.parse(
+        '<svg viewBox="0 0 24 24"><path d="'
+        '${List.generate(16, (i) => 'M2 ${i + 4}H22').join()}'
+        '"/></svg>',
+      );
+      final lone = IconGeometry.parse(
+        '<svg viewBox="0 0 24 24"><path d="M12 2V22"/></svg>',
+      );
+      final controller = AnimationController(
+        vsync: tester,
+        duration: const Duration(milliseconds: 100),
+      );
+      addTearDown(controller.dispose);
+      final geom = ShapeMorphGeometry.build(
+        busy,
+        lone,
+        const ShapeMorphSpec(autoPair: false),
+      );
+      expect(geom.exits.length, 16);
+
+      await tester.pumpWidget(
+        Center(
+          child: CustomPaint(
+            size: const Size.square(64),
+            painter: ShapeMorphPainter(
+              geometry: geom,
+              animation: controller,
+              color: const Color(0xFF000000),
+            ),
+          ),
+        ),
+      );
+      for (var i = 0; i <= 10; i++) {
+        controller.value = i / 10;
+        await tester.pump();
+        expect(tester.takeException(), isNull, reason: 'clock at ${i / 10}');
+      }
+    });
+
     testWidgets('a dedicated colorCurve paints every phase exception-free',
         (tester) async {
       final controller = AnimationController(

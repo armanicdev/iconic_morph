@@ -38,6 +38,7 @@ class IconicMorphHero extends StatefulWidget {
     this.idleBuilder,
     this.semanticLabel,
     this.motionBlur = false,
+    this.strokeWidth = kIconStrokeWidth,
     this.onSettled,
     this.actionEffect,
     this.actionController,
@@ -85,6 +86,10 @@ class IconicMorphHero extends StatefulWidget {
   /// Cheap velocity-scaled motion blur on the morph worm (see
   /// [IconicMorph.motionBlur]). Applies only during the morph phase.
   final bool motionBlur;
+
+  /// Stroke weight in viewBox units (default [kIconStrokeWidth] = 2 at a 24
+  /// box), carried through every phase — intro, morph, action, idle.
+  final double strokeWidth;
 
   /// Fired (after frame) each time the hero comes to REST on [icon] — i.e. it has
   /// settled into idle: once after the initial appearance/intro, and again after
@@ -281,6 +286,7 @@ class _IconicMorphHeroState extends State<IconicMorphHero>
           size: widget.size,
           color: color,
           effect: widget.intro!,
+          strokeWidth: widget.strokeWidth,
           semanticLabel: label,
         ),
       _Phase.morph => IconicMorph(
@@ -295,6 +301,7 @@ class _IconicMorphHeroState extends State<IconicMorphHero>
           size: widget.size,
           color: color,
           motionBlur: widget.motionBlur,
+          strokeWidth: widget.strokeWidth,
           semanticLabel: label,
         ),
       _Phase.action => IconicAnimatedIcon(
@@ -303,6 +310,7 @@ class _IconicMorphHeroState extends State<IconicMorphHero>
           size: widget.size,
           color: color,
           effect: widget.actionEffect!,
+          strokeWidth: widget.strokeWidth,
           semanticLabel: label,
         ),
       _Phase.idle when restOverride != null => KeyedSubtree(
@@ -316,6 +324,7 @@ class _IconicMorphHeroState extends State<IconicMorphHero>
               size: widget.size,
               color: color,
               effect: idleEffect,
+              strokeWidth: widget.strokeWidth,
               semanticLabel: label,
             )
           : IconImage.asset(

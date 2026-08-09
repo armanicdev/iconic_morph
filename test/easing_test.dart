@@ -34,6 +34,15 @@ void main() {
       }
     });
 
+    test('a spring that cannot reach its target by t=1 asserts loudly', () {
+      // velocity so negative the normalization flips sign — a silent flip
+      // would invert the whole curve.
+      expect(
+        () => const IconicSpringCurve(omega: 0.5, velocity: -5).transform(0.5),
+        throwsAssertionError,
+      );
+    });
+
     test('value equality keys on the tuning', () {
       expect(const IconicSpringCurve(), const IconicSpringCurve());
       expect(

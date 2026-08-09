@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.8.1
+
+**Developer-freedom pass — no widget locks you to the engine's defaults.**
+
+### Added
+
+- `strokeWidth` on every drop-in widget — `IconicAnimatedIcon`, `IconicMorph`,
+  `IconicShapeMorph`, `IconicMorphHero`, `IconicMorphSequence` — carried
+  through every phase (intro / morph / action / idle). The painters always
+  supported it; now an icon system drawn at 1.5 or 3 units never has to
+  hand-drive a painter just to keep its own line weight.
+
+### Fixed
+
+- Shape-morph stagger is normalized against the contour count: a busy icon
+  with many unpaired contours could cascade its exit/enter window into a
+  zero-or-negative width. Each contour now always keeps at least 40% of the
+  window to move in.
+- `IconicSpringCurve` asserts (in debug) when a strongly negative `velocity`
+  leaves the spring short of its target at `t = 1` — previously the
+  normalization silently flipped and inverted the whole curve.
+
 ## 1.8.0
 
 **The easing vocabulary — pick a velocity profile by feel, on both morphs.**

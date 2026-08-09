@@ -345,11 +345,15 @@ class ShapeMorphPainter extends CustomPainter {
     ..strokeJoin = StrokeJoin.round
     ..isAntiAlias = true);
 
-  /// Contour [i] of [n]'s local progress inside a half-window, cascaded.
+  /// Contour [i] of [n]'s local progress inside a half-window, cascaded. The
+  /// stagger is normalized against the contour COUNT — a busy icon must never
+  /// cascade its window into a zero-or-negative width (each contour keeps at
+  /// least 40% of the window to actually move in).
   double _local(double t, int i, int n) {
     if (n <= 1) return t.clamp(0.0, 1.0);
-    final width = 1 - (n - 1) * spec.stagger;
-    return ((t - i * spec.stagger) / width).clamp(0.0, 1.0);
+    final stagger = math.min(spec.stagger, 0.6 / (n - 1));
+    final width = 1 - (n - 1) * stagger;
+    return ((t - i * stagger) / width).clamp(0.0, 1.0);
   }
 
   @override
@@ -449,6 +453,7 @@ class IconicShapeMorph extends StatefulWidget {
     this.duration = IconMotion.shapeMorph,
     this.autoplay = true,
     this.controller,
+    this.strokeWidth = kIconStrokeWidth,
     this.semanticLabel,
   });
 
@@ -477,6 +482,10 @@ class IconicShapeMorph extends StatefulWidget {
   /// Optional external trigger (the shared animated-icon handle): `play()`
   /// morphs from→to, `stop()` settles back on the source.
   final IconicAnimatedIconController? controller;
+
+  /// Stroke weight in viewBox units (default [kIconStrokeWidth] = 2 at a 24
+  /// box). Match it to your own icon system's line weight.
+  final double strokeWidth;
 
   final String? semanticLabel;
 
@@ -580,6 +589,7 @@ class _IconicShapeMorphState extends State<IconicShapeMorph>
           chromeColor: widget.chromeColor,
           chromeColorEnd: widget.chromeColorEnd,
           spec: widget.spec,
+          strokeWidth: widget.strokeWidth,
         ),
       ),
     );

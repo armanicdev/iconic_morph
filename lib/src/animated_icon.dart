@@ -53,6 +53,7 @@ class IconicAnimatedIcon extends StatefulWidget {
     this.controller,
     this.autoplay = true,
     this.timeScale = 1,
+    this.strokeWidth = kIconStrokeWidth,
     this.semanticLabel,
   });
 
@@ -77,6 +78,10 @@ class IconicAnimatedIcon extends StatefulWidget {
   /// Stretches the effect's duration (1 = real time, 6 = 6× slow motion). Lets a
   /// gallery inspect the motion frame by frame without changing the effect.
   final double timeScale;
+
+  /// Stroke weight in viewBox units (default [kIconStrokeWidth] = 2 at a 24
+  /// box). Match it to your own icon system's line weight.
+  final double strokeWidth;
 
   final String? semanticLabel;
 
@@ -285,6 +290,7 @@ class _IconicAnimatedIconState extends State<IconicAnimatedIcon>
                 geom: geom,
                 color: color,
                 progress: _ac,
+                strokeWidth: widget.strokeWidth,
               ),
             ),
           );

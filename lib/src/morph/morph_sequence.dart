@@ -37,6 +37,7 @@ class IconicMorphSequence extends StatefulWidget {
     this.loop = true,
     this.autoplay = true,
     this.motionBlur = false,
+    this.strokeWidth = kIconStrokeWidth,
     this.semanticLabel,
   });
 
@@ -68,6 +69,10 @@ class IconicMorphSequence extends StatefulWidget {
 
   /// Velocity motion blur on each morph (see [IconicMorphHero.motionBlur]).
   final bool motionBlur;
+
+  /// Stroke weight in viewBox units (default [kIconStrokeWidth] = 2 at a 24
+  /// box), carried through the whole chain.
+  final double strokeWidth;
 
   final String? semanticLabel;
 
@@ -134,6 +139,7 @@ class _IconicMorphSequenceState extends State<IconicMorphSequence> {
       intro: _index == 0 ? (widget.intro ?? IconAnimations.introFor(icon)) : null,
       idleBuilder: _idleFor,
       motionBlur: widget.motionBlur,
+      strokeWidth: widget.strokeWidth,
       semanticLabel: widget.semanticLabel,
       onSettled: _onSettled,
     );

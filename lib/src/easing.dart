@@ -67,8 +67,18 @@ class IconicSpringCurve extends Curve {
 
   @override
   double transformInternal(double t) {
-    double p(double x) => 1 - (1 + (omega - velocity) * x) * math.exp(-omega * x);
-    return p(t) / p(1);
+    double p(double x) =>
+        1 - (1 + (omega - velocity) * x) * math.exp(-omega * x);
+    final end = p(1);
+    // A strongly negative velocity (launching AWAY from the target) can leave
+    // the spring short of the target at t = 1, flipping the normalization.
+    // Anticipation is fine; a spring that never arrives is not.
+    assert(
+      end > 0,
+      'IconicSpringCurve(omega: $omega, velocity: $velocity) does not reach '
+      'its target by t = 1 — raise omega or bring velocity toward 0.',
+    );
+    return p(t) / end;
   }
 
   // Value equality so specs/plans carrying a spring compare == when tuned the
