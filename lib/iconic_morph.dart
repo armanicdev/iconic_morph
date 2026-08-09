@@ -60,6 +60,10 @@ export 'src/effects/icon_shuffle.dart' show IconShuffle;
 export 'src/effects/icon_inbox_riffle.dart' show IconInboxRiffle;
 export 'src/effects/icon_lock_engage.dart' show IconLockEngage;
 
+// The easing vocabulary — curated velocity profiles (glide / flight / snap)
+// plus the critically-damped spring curve behind `snap`.
+export 'src/easing.dart' show IconicEase, IconicSpringCurve;
+
 // The cross-icon morph.
 export 'src/morph/morph_plan.dart'
     show IconMorphPlan, MorphAssemble, MorphExit;

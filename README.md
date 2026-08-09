@@ -110,6 +110,34 @@ For a morph living inside a larger stateful glyph (several destinations,
 bespoke rest states), build a `ShapeMorphGeometry` per transition and drive a
 `ShapeMorphPainter` with your own controller.
 
+## Easing by feel
+
+Both morphs take their velocity profile from `IconicEase` — three curated
+profiles, named by feel, and every knob accepts any `Curve` of your own:
+
+| Profile | What it is | Feels like |
+| --- | --- | --- |
+| `IconicEase.glide` | symmetric ease-in-out | calm — a passive change nobody triggered |
+| `IconicEase.flight` | fast-launch ease-out | the worm's signature — leaves decisively, lands gently |
+| `IconicEase.snap` | critically-damped spring | platform-native — responds on the first frame, settles on an exponential tail |
+
+`snap` is an `IconicSpringCurve(omega, velocity)` — a real spring solution as
+a plain `Curve`, with genuine non-zero launch velocity (what cubics can't
+give you). Keep `velocity < omega` and it is strictly monotone: no overshoot,
+the right law for stroke geometry.
+
+```dart
+// The worm on a spring launch instead of its cubic:
+IconicMorph(a, b, plan: const IconMorphPlan(curve: IconicEase.snap))
+
+// A calm shape morph whose INK announces the verdict early:
+IconicShapeMorph(a, b, spec: const ShapeMorphSpec(
+  curve: IconicEase.glide, colorCurve: Curves.easeOutCubic))
+```
+
+Defaults: the worm rides `flight` (unchanged since 1.0), the shape morph rides
+`snap` at `IconMotion.shapeMorph` (460 ms).
+
 ## Ink that lifts away (how a trim-path ends)
 
 A trim-path that animates *length* alone cannot vanish cleanly — a round-capped

@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import '../easing.dart';
 import '../motion.dart';
 
 import '../icon_geometry.dart';
@@ -70,6 +71,7 @@ enum MorphExit {
 class IconMorphPlan {
   const IconMorphPlan({
     this.duration = IconMotion.iconMorph,
+    this.curve = IconicEase.flight,
     this.samples = 200,
     this.heroAnchor,
     this.heroTargetIndex,
@@ -101,6 +103,14 @@ class IconMorphPlan {
 
   /// Total play time. Prefer [IconMotion] constants for consistent timing.
   final Duration duration;
+
+  /// The worm's temporal ease — the velocity profile the head and tail ride
+  /// along the master path. Defaults to [IconicEase.flight] (peak velocity at
+  /// the first frame, long soft settle — the signature). Direction-aware: a
+  /// reverse play mirrors it so the worm still launches fast and lands slow
+  /// going backward. Swap in [IconicEase.snap] for a spring launch or any
+  /// [Curve] of your own.
+  final Curve curve;
 
   /// Points the hero source + target lines are each resampled to. More = a
   /// smoother morph at a little more cost. >= 2.
@@ -265,6 +275,7 @@ class IconMorphPlan {
   /// keeping all other fields from the original.
   IconMorphPlan copyWith({
     Duration? duration,
+    Curve? curve,
     int? samples,
     Offset? heroAnchor,
     int? heroTargetIndex,
@@ -292,6 +303,7 @@ class IconMorphPlan {
   }) =>
       IconMorphPlan(
         duration: duration ?? this.duration,
+        curve: curve ?? this.curve,
         samples: samples ?? this.samples,
         heroAnchor: heroAnchor ?? this.heroAnchor,
         heroTargetIndex: heroTargetIndex ?? this.heroTargetIndex,
@@ -326,6 +338,7 @@ class IconMorphPlan {
       identical(this, other) ||
       other is IconMorphPlan &&
           other.duration == duration &&
+          other.curve == curve &&
           other.samples == samples &&
           other.heroAnchor == heroAnchor &&
           other.heroTargetIndex == heroTargetIndex &&
@@ -357,6 +370,7 @@ class IconMorphPlan {
   @override
   int get hashCode => Object.hashAll([
         duration,
+        curve,
         samples,
         heroAnchor,
         heroTargetIndex,

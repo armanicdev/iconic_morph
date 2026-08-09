@@ -113,6 +113,37 @@ void main() {
         expect(tester.takeException(), isNull, reason: 'clock at $v');
       }
     });
+
+    testWidgets('a dedicated colorCurve paints every phase exception-free',
+        (tester) async {
+      final controller = AnimationController(
+        vsync: tester,
+        duration: const Duration(milliseconds: 100),
+      );
+      addTearDown(controller.dispose);
+      const spec = ShapeMorphSpec(colorCurve: Curves.easeOutCubic);
+      final geom = ShapeMorphGeometry.build(a, b, spec);
+
+      await tester.pumpWidget(
+        Center(
+          child: CustomPaint(
+            size: const Size.square(64),
+            painter: ShapeMorphPainter(
+              geometry: geom,
+              animation: controller,
+              spec: spec,
+              color: const Color(0xFF0000FF),
+              colorEnd: const Color(0xFF00FF00),
+            ),
+          ),
+        ),
+      );
+      for (final v in [0.0, 0.3, 0.7, 1.0]) {
+        controller.value = v;
+        await tester.pump();
+        expect(tester.takeException(), isNull, reason: 'ink clock at $v');
+      }
+    });
   });
 
 }

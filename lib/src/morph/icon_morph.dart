@@ -322,11 +322,11 @@ class IconicMorphPainter extends CustomPainter {
   /// Peak blur sigma (viewBox units) at mid-flight when [motionBlur] is on.
   static const double _blurMax = 0.9;
 
-  // Fast-launch ease-out for the worm: peak velocity at the first frame,
-  // decelerating into a long, soft settle. Direction-aware — a reverse play
-  // mirrors this so the worm still launches fast and arrives slow going backward,
-  // not a curve flip to slow-start/fast-end.
-  static const Curve _ease = Cubic(0.25, 1.0, 0.5, 1.0);
+  // The worm's temporal ease is the PLAN's ([IconMorphPlan.curve], default
+  // IconicEase.flight: peak velocity at the first frame, long soft settle).
+  // Direction-aware — a reverse play mirrors it so the worm still launches
+  // fast and arrives slow going backward, not a curve flip to
+  // slow-start/fast-end.
 
   /// The worm's tail/head arc-length window at controller value [t], direction-
   /// aware in BOTH velocity and lead role. Forward (controller 0→1): the head
@@ -334,15 +334,16 @@ class IconicMorphPainter extends CustomPainter {
   /// while the tail draws across from the source (0→sEntry) — the "draw-on".
   ///
   /// Reverse ("go back", controller 1→0): gesture progress is reframed as
-  /// `1 - t` so [_ease] still gives fast-leave / slow-arrive in REAL time. The
+  /// `1 - t` so the plan's curve still gives fast-leave / slow-arrive in REAL
+  /// time. The
   /// SMILE HEAD (right, lTot) leads — it flies the arc back and lands on the
   /// user's RIGHT (lSrc), the same point that launched it forward, outrunning by
   /// [headLead]; the smile's left entry trails to the user's left (sEntry→0).
   /// Head→head, right→right: the forward draw-on played back, no pinned smile.
   ({double tailS, double headS}) _wormEnds(double t) {
     final gp = reverse ? 1 - t : t; // gesture progress, 0→1 in real time
-    final eHead = _ease.transform((gp * plan.headLead).clamp(0.0, 1.0));
-    final eTail = _ease.transform(gp);
+    final eHead = plan.curve.transform((gp * plan.headLead).clamp(0.0, 1.0));
+    final eTail = plan.curve.transform(gp);
     if (!reverse) {
       return (
         tailS: geom.sEntry * eTail,

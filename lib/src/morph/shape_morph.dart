@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/widgets.dart';
 
 import '../animated_icon.dart' show IconicAnimatedIconController;
+import '../easing.dart';
 import '../icon_effect.dart' show kIconStrokeWidth;
 import '../icon_geometry.dart';
 import '../icon_image.dart';
@@ -49,7 +50,8 @@ class ShapeMorphSpec {
     this.inStart = 0.45,
     this.stagger = 0.08,
     this.exitFadeStart = 0.6,
-    this.curve = Curves.easeInOutCubic,
+    this.curve = IconicEase.snap,
+    this.colorCurve,
   })  : assert(samples >= 8, 'too few samples to read as a smooth line'),
         assert(outShare > 0 && outShare <= 1),
         assert(inStart >= 0 && inStart < 1);
@@ -89,10 +91,19 @@ class ShapeMorphSpec {
   /// Where inside a retract its dissolve begins (see [StrokeTaper.exitAlpha]).
   final double exitFadeStart;
 
-  /// The one clock everything reads — geometry, ink, exits, enters. Symmetric
-  /// by default: an in-place becoming accelerates in and breathes out; a
-  /// front-loaded launch curve here reads as a snap.
+  /// The master clock everything reads — geometry, exits, enters, and (unless
+  /// [colorCurve] says otherwise) ink. Defaults to [IconicEase.snap], the
+  /// critically-damped spring: a verdict lands with genuine launch velocity
+  /// and settles on an exponential tail. Hand it [IconicEase.glide] for the
+  /// calm symmetric profile, [IconicEase.flight] for the worm's launch, or any
+  /// [Curve] — including a tuned [IconicSpringCurve].
   final Curve curve;
+
+  /// The INK's own clock, when colour should not ride the geometry's. Null
+  /// (default) follows [curve] exactly — one gesture, one clock. Set it when
+  /// the colour story should lead (e.g. [Curves.easeOutCubic] announces the
+  /// verdict ink while the line is still bending) or trail the shapes.
+  final Curve? colorCurve;
 
   @override
   bool operator ==(Object other) =>
@@ -105,7 +116,8 @@ class ShapeMorphSpec {
       other.inStart == inStart &&
       other.stagger == stagger &&
       other.exitFadeStart == exitFadeStart &&
-      other.curve == curve;
+      other.curve == curve &&
+      other.colorCurve == colorCurve;
 
   static bool _pairsEqual(
     List<(Offset, Offset)> a,
@@ -130,6 +142,7 @@ class ShapeMorphSpec {
         stagger,
         exitFadeStart,
         curve,
+        colorCurve,
       ]);
 }
 
@@ -346,16 +359,19 @@ class ShapeMorphPainter extends CustomPainter {
     canvas.save();
     canvas.scale(s);
 
-    // ONE eased clock for everything — geometry, ink, exits, enters. Two
-    // velocity profiles argue; one reads as a single gesture.
-    final move = spec.curve.transform(animation.value.clamp(0.0, 1.0));
+    // ONE master clock for all geometry — exits, enters, bending pairs. Ink
+    // follows it too unless the spec gives colour its own profile; two clocks
+    // for the same DISTANCE argue, but colour leading geometry is a voice.
+    final t = animation.value.clamp(0.0, 1.0);
+    final move = spec.curve.transform(t);
+    final ink = spec.colorCurve == null ? move : spec.colorCurve!.transform(t);
 
-    // The still chrome — never re-drawn, ink walking with the same clock.
-    paint.color = Color.lerp(chromeColor, chromeColorEnd, move)!;
+    // The still chrome — never re-drawn, ink walking with the colour clock.
+    paint.color = Color.lerp(chromeColor, chromeColorEnd, ink)!;
     canvas.drawPath(geometry.still, paint);
 
     // Paired shapes — the feature BECOMES its partner.
-    paint.color = Color.lerp(color, colorEnd, move)!;
+    paint.color = Color.lerp(color, colorEnd, ink)!;
     for (final p in geometry.pairs) {
       for (var i = 0; i < p.from.length; i++) {
         _lerpBuf[i] = Offset.lerp(p.from[i], p.to[i], move)!;
@@ -430,7 +446,7 @@ class IconicShapeMorph extends StatefulWidget {
     this.colorEnd,
     this.chromeColor,
     this.chromeColorEnd,
-    this.duration = IconMotion.iconMorph,
+    this.duration = IconMotion.shapeMorph,
     this.autoplay = true,
     this.controller,
     this.semanticLabel,

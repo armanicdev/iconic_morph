@@ -48,6 +48,11 @@ abstract final class IconMotion {
   /// Cross-icon morph (the worm + flight).
   static const Duration iconMorph = Duration(milliseconds: 640);
 
+  /// Sibling-icon SHAPE morph (features becoming each other in place). Shorter
+  /// than [iconMorph]: nothing travels, so the beat that reads "considered" on
+  /// a flight reads "sluggish" on an in-place becoming.
+  static const Duration shapeMorph = Duration(milliseconds: 460);
+
   /// Long shimmer sweep period.
   static const Duration shimmerSweep = Duration(milliseconds: 3600);
 

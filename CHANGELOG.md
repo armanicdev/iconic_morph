@@ -1,5 +1,40 @@
 # Changelog
 
+## 1.8.0
+
+**The easing vocabulary — pick a velocity profile by feel, on both morphs.**
+
+### Added
+
+- `IconicEase` — the engine's curated curve vocabulary:
+  - `glide` — symmetric ease-in-out, the calm profile for passive changes;
+  - `flight` — fast-launch ease-out, the worm's signature clock (bit-identical
+    to the previously hardcoded `Cubic(0.25, 1.0, 0.5, 1.0)`);
+  - `snap` — a **critically-damped spring** with genuine launch velocity: the
+    profile platform-native motion rides. Responds on the first frame, closes
+    most of the distance by half-time, settles on an exponential tail.
+- `IconicSpringCurve(omega, velocity)` — the tunable spring behind `snap`, a
+  plain `Curve` (with value equality) so any controller can ride it. Keep
+  `velocity < omega` and it is strictly monotone — no overshoot, the right law
+  for stroke geometry.
+- `IconMorphPlan.curve` — the worm's temporal ease is now a plan knob
+  (default `IconicEase.flight`, so existing morphs are unchanged). In
+  `copyWith` / `==` / `hashCode` like every other knob, direction-aware on
+  reverse plays.
+- `ShapeMorphSpec.colorCurve` — the ink's own clock. Null (default) follows
+  `curve` exactly; set it when the colour story should lead or trail the
+  bending geometry.
+- `IconMotion.shapeMorph` (460 ms) — the shape morph's own beat.
+
+### Changed
+
+- **The shape morph is snappy now.** `ShapeMorphSpec.curve` defaults to
+  `IconicEase.snap` (was the symmetric `easeInOutCubic`) and
+  `IconicShapeMorph.duration` defaults to `IconMotion.shapeMorph` (460 ms, was
+  `iconMorph`'s 640 ms): a triggered sibling swap launches like it was caused
+  and settles like silk. Pass `curve: IconicEase.glide` (and the old duration)
+  to restore the 1.7.0 feel.
+
 ## 1.7.0
 
 **The shape morph — a second morph instrument, for icons that are siblings.**
