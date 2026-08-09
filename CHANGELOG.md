@@ -1,5 +1,38 @@
 # Changelog
 
+## 1.7.0
+
+**The shape morph — a second morph instrument, for icons that are siblings.**
+`IconicMorph` (the worm) is built for icons that share nothing: one hero line
+flies a flight path while the rest of the target draws itself on. Between two
+icons that share most of their drawing — a framed glyph whose centre mark is
+the only thing that changes — the worm retracts and re-draws the shared chrome
+around a tiny hop, and the transition reads as the icon flickering apart.
+
+### Added
+
+- `ShapeMorphGeometry.build(from, to, spec)` — the pure precompute:
+  - contours present in BOTH icons are detected geometrically (no
+    configuration) and held perfectly still as one prebuilt chrome path;
+  - remaining features are PAIRED and point-lerped — resampled to a common
+    count and direction-aligned (`PathMorph.alignTo`), so the line itself
+    bends from one feature into the other at constant stroke weight;
+  - anything unpaired pen-retracts out / draws on under the trim-end laws
+    (`StrokeTaper.exitAlpha` / `StrokeTaper.emerge` — no terminal-dot frames,
+    no opacity pops).
+- `ShapeMorphSpec` — explicit `(fromAnchor, toAnchor)` pairings for
+  choreography that is a design decision ("the smile becomes the dot"),
+  greedy `autoPair` for the rest, plus timing/cascade knobs and the ONE
+  eased clock (`easeInOutCubic` by default — a front-loaded launch curve on
+  an in-place becoming reads as a snap, learned the hard way).
+- `ShapeMorphPainter` — drive it with any `Animation<double>`; carries a
+  begin→end ink for the morphing shapes AND a separate begin→end ink for the
+  still chrome, both lerped on the same clock as the geometry, so a verdict
+  can arrive in its own colour without a snap.
+- `IconicShapeMorph` — the drop-in widget (autoplay / controller /
+  reduced-motion settles on the target frame).
+
+
 ## 1.6.0
 
 **A trim has two ends, and now both of them fade.** Every release up to here

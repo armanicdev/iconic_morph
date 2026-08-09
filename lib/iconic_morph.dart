@@ -68,3 +68,13 @@ export 'src/morph/path_morph.dart' show PathMorph;
 export 'src/morph/icon_morph.dart' show IconicMorph, IconicMorphPainter;
 export 'src/morph/morph_hero.dart' show IconicMorphHero;
 export 'src/morph/morph_sequence.dart' show IconicMorphSequence;
+
+// The SHAPE morph — the sibling-icon instrument: shared contours hold still,
+// paired features point-lerp into each other, ink lerps on the same clock.
+export 'src/morph/shape_morph.dart'
+    show
+        IconicShapeMorph,
+        ShapeMorphGeometry,
+        ShapeMorphPair,
+        ShapeMorphPainter,
+        ShapeMorphSpec;

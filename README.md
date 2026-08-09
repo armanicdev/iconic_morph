@@ -76,6 +76,40 @@ Compose them with `IconSequence([IconStep(...), …])`. Drive playback with an
 All effects honour the OS reduce-motion setting (`IconMotion.reduced`) by
 snapping to their end state.
 
+## Two morphs: strangers fly, siblings become
+
+`IconicMorph` is the **worm** — for icons that share nothing. One real line of
+the source becomes a travelling worm (head launching along its own tangent, a
+tail catching up over a smooth flight), while the rest of the target draws
+itself on.
+
+`IconicShapeMorph` is the **shape morph** — for icons that are siblings. Any
+contour present in both icons is detected automatically and held perfectly
+still; the differing features are paired and point-lerped so a line physically
+bends from one shape into the other; anything unpaired pen-retracts out or
+draws on. Ink lerps with the geometry — the morphing shapes and the still
+chrome each take a begin → end colour on the same eased clock.
+
+```dart
+// Auto: shared chrome stands still, closest features become each other.
+IconicShapeMorph('assets/icons/face-id.svg', 'assets/icons/face-id-check.svg')
+
+// Authored choreography + verdict colours:
+IconicShapeMorph(
+  'assets/icons/face-id.svg', 'assets/icons/face-id-alert.svg',
+  spec: const ShapeMorphSpec(pairs: [
+    (Offset(12, 10.5), Offset(12, 10)), // the nose becomes the "!" stem
+    (Offset(11, 16.3), Offset(12, 16)), // the smile becomes its dot
+  ]),
+  color: Color(0xFF0095E8), colorEnd: Color(0xFFDC2626), // mark → red
+  chromeColorEnd: Color(0xFF6E737D), // frame → secondary ink
+)
+```
+
+For a morph living inside a larger stateful glyph (several destinations,
+bespoke rest states), build a `ShapeMorphGeometry` per transition and drive a
+`ShapeMorphPainter` with your own controller.
+
 ## Ink that lifts away (how a trim-path ends)
 
 A trim-path that animates *length* alone cannot vanish cleanly — a round-capped
