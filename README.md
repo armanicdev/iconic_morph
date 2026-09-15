@@ -68,6 +68,13 @@ IconImage.svg('<svg viewBox="0 0 24 24">…</svg>', color: Colors.indigo);
 | `IconWeightPulse` | stroke-weight emphasis pulse |
 | `IconDetailSpin` / `IconGridPop` / `IconLineShrink` / `IconShuffle` / `IconInboxRiffle` / `IconLockEngage` | misc. one-shots (press knocks, a riffle, a lock engage) |
 
+For a control that changes STATE between two unrelated glyphs, `IconicBlurSwap(icon)`
+plays a blur cross-dissolve when `icon` changes — the old glyph loses focus and
+slips away as the new one sharpens and springs in over the same centre
+(copy → check, play → pause). Neither a morph (no meaningless in-between shape)
+nor a cross-fade (no two ghosts). `BlurSwapFrame` exposes its timing law for
+hosts that paint their own glyphs.
+
 Compose them with `IconSequence([IconStep(...), …])`. Drive playback with an
 `IconicAnimatedIconController`, or declare per-icon defaults via `IconAnimations`
 + `IconAnimationProfile`. For multi-state morphs use `IconicMorphHero` /

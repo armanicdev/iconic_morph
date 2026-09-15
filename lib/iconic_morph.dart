@@ -36,6 +36,8 @@ export 'src/icon_effect.dart'
         kIconStrokeWidth;
 export 'src/stroke_taper.dart' show StrokeTaper;
 export 'src/icon_image.dart' show IconImage;
+export 'src/blur_swap.dart'
+    show BlurSwapFrame, BlurSwapPose, IconicBlurSwap;
 export 'src/motion.dart' show IconMotion;
 export 'src/morph_icons.dart' show MorphIcons;
 

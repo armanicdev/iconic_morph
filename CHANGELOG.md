@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.10.0
+
+**A blur cross-dissolve — the platform "replace" beat, for icons that are
+not siblings.**
+
+### Added
+
+- `IconicBlurSwap(icon, …)` — change `icon` and the glyph on screen softens,
+  thins and shrinks out of focus while the new one sharpens and springs into
+  place over the same centre. For a control that changes state between two
+  unrelated glyphs (copy → check, play → pause), where a path morph would
+  draw a meaningless in-between shape and a plain cross-fade shows two
+  ghosts. Knobs: `blur` (peak sigma, viewBox units), `shrink`, `duration`,
+  `strokeWidth`. Re-arms from whatever is on screen when `icon` changes
+  mid-swap; honours reduce-motion by snapping. The blur is a mask filter on
+  the glyph's own paint — no offscreen layer.
+- `BlurSwapFrame` + `BlurSwapPose` — the swap's timing law on a 0..1 clock
+  (outgoing gone by 55%, incoming from 25%, focus and opacity on ease-in /
+  `arrive`, the incoming scale on the `snap` spring), exposed so a host that
+  paints its own glyphs can play the identical beat.
+- `IconMotion.iconSwap` (380 ms) — the swap's default beat.
+
 ## 1.9.0
 
 **The easing vocabulary is total — nothing moves on an unnamed curve.**

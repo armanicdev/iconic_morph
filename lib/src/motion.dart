@@ -39,6 +39,11 @@ abstract final class IconMotion {
   /// Stroke-weight emphasis pulse.
   static const Duration iconWeightPulse = Duration(milliseconds: 520);
 
+  /// One blur cross-dissolve between two icons ([IconicBlurSwap]) — a state
+  /// change on a control, so it sits between a press beat and a morph: long
+  /// enough to see the focus go, short enough to feel like the tap did it.
+  static const Duration iconSwap = Duration(milliseconds: 380);
+
   /// Slow small-angle idle tilt (ping-pong).
   static const Duration iconIdleTilt = Duration(milliseconds: 2600);
 
